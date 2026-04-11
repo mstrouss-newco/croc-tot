@@ -16,17 +16,11 @@
 <title>Croc Tot</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-html{height:100%;background:#0a0a1a;}
-body{background:#0a0a1a;font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;min-height:100dvh;overflow-y:auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
-#wrap{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 6px 16px;width:100%;max-width:640px;}
-/* Canvas: fills screen width on all devices, preserves 600:340 ratio */
+html,body{height:100%;background:#0a0a1a;}
+body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;min-height:100dvh;overflow-y:auto;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);}
+#wrap{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 4px 8px;width:100%;max-width:640px;}
 #canvasWrap{width:100%;position:relative;}
 canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid rgba(255,255,255,0.18);touch-action:none;-webkit-touch-callout:none;}
-/* iPhone SE / small phones */
-@media(max-width:390px){#wrap{padding:4px 4px 12px;gap:3px;}}
-/* iPad — center and cap width nicely */
-@media(min-width:768px){#wrap{max-width:680px;padding:12px 12px 20px;}}
-/* HUD row — compact on mobile */
 #hud{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;width:100%;}
 .hb{background:rgba(255,255,255,0.13);border-radius:7px;padding:2px 7px;font-size:11px;color:#fff;font-weight:600;}
 .hb b{font-size:13px;}
@@ -41,10 +35,40 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
 #btnRow{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;width:100%;}
 #uh{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;min-height:16px;width:100%;}
 .upg{background:rgba(255,200,0,0.18);border:1px solid rgba(255,200,0,0.45);border-radius:5px;padding:1px 6px;font-size:11px;color:#ffdd44;font-weight:700;}
-/* Portrait orientation hint for very tall phones */
-@media(max-width:480px){
-  .hb{font-size:10px;padding:2px 5px;}
-  .btn{padding:10px 18px;font-size:15px;}
+
+/* ── iPhone small ── */
+@media(max-width:390px){#wrap{padding:2px 2px 8px;gap:2px;}.hb{font-size:10px;padding:2px 5px;}}
+
+/* ── iPad portrait (768px+) — fill the full width, compact UI ── */
+@media(min-width:768px){
+  body{align-items:center;}
+  #wrap{max-width:100%;padding:2px 4px 4px;gap:2px;width:100vw;}
+  canvas{border-radius:6px;}
+  .hb{font-size:12px;padding:2px 8px;}
+  .hb b{font-size:14px;}
+  .bar{height:5px;}
+  #msg{font-size:13px;}
+  .btn{padding:7px 18px;font-size:13px;}
+}
+
+/* ── iPad landscape (1024px+) — maximise canvas height too ── */
+@media(min-width:1024px){
+  body{align-items:flex-start;overflow:hidden;}
+  #wrap{
+    /* Fill entire viewport, use flex to make canvas as tall as possible */
+    height:100vh;height:100dvh;
+    padding:2px 2px 2px;gap:1px;
+    justify-content:flex-start;
+  }
+  /* Canvas fills remaining vertical space after HUD */
+  #canvasWrap{flex:1;display:flex;align-items:center;}
+  canvas{
+    /* Scale to fill available height while respecting 600:340 ratio */
+    width:auto !important;
+    height:100% !important;
+    max-height:calc(100dvh - 110px);
+    max-width:100%;
+  }
 }
 </style>
 
