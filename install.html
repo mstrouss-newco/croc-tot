@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a1a">
+<title>Play Croc Tot!</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:#0a0a1a;font-family:Arial,sans-serif;color:#fff;overflow:hidden;}
+body{display:flex;align-items:center;justify-content:center;}
+.screen{width:100%;max-width:420px;padding:20px;text-align:center;}
+.logo{font-size:52px;margin-bottom:4px;animation:bounce 1.2s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+h1{font-size:36px;font-weight:900;letter-spacing:2px;margin-bottom:4px;}
+h1 span{color:#ff6600;}
+.sub{color:#888;font-size:14px;margin-bottom:24px;}
+.share-hint{background:#1a1a2e;border:2px solid #ff6600;border-radius:12px;padding:14px;margin-bottom:18px;animation:pb 2s ease-in-out infinite;}
+@keyframes pb{0%,100%{border-color:#ff6600;}50%{border-color:#ff8833;}}
+.share-hint p{font-size:13px;color:#ff8833;font-weight:700;margin-bottom:8px;}
+.arrow-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:#aaa;flex-wrap:wrap;}
+.share-btn-demo{background:#1c1c1e;border:1px solid #444;border-radius:8px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#1a82fb;}
+.steps{background:#111;border-radius:16px;padding:18px;margin-bottom:18px;text-align:left;}
+.steps h3{font-size:12px;color:#ff6600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;text-align:center;}
+.step{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #222;}
+.step:last-child{border-bottom:none;}
+.step-num{width:28px;height:28px;border-radius:50%;background:#ff6600;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
+.step-text{font-size:13px;line-height:1.4;color:#ccc;}
+.step-text b{color:#fff;}
+.step-icon{font-size:20px;flex-shrink:0;margin-left:auto;}
+.play-btn{display:block;width:100%;padding:15px;border-radius:12px;border:none;background:#ff6600;color:#fff;font-size:17px;font-weight:900;cursor:pointer;text-decoration:none;margin-bottom:10px;}
+.play-small{color:#555;font-size:12px;text-decoration:none;display:block;}
+#already{display:none;flex-direction:column;align-items:center;gap:16px;}
+</style>
+</head>
+<body>
+<div class="screen" id="main">
+  <div class="logo">🥔</div>
+  <h1>CROC <span>TOT</span></h1>
+  <p class="sub">Made by Jackson Strouss &bull; Free browser game</p>
+  <div class="share-hint">
+    <p>📱 Get the full-screen app — 2 taps to install:</p>
+    <div class="arrow-row">
+      <span>Tap</span>
+      <span class="share-btn-demo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a82fb" stroke-width="2.5" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share</span>
+      <span>→ <b style="color:#fff;">Add to Home Screen</b></span>
+    </div>
+  </div>
+  <div class="steps">
+    <h3>Step by step</h3>
+    <div class="step"><div class="step-num">1</div><div class="step-text">Open in <b>Safari</b> (not Chrome)</div><div class="step-icon">🧭</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Tap the <b>Share ↑</b> button at the bottom</div><div class="step-icon">⬆️</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Tap <b>"Add to Home Screen"</b></div><div class="step-icon">➕</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Tap <b>Add</b> — game icon appears!</div><div class="step-icon">🎮</div></div>
+  </div>
+  <a href="https://croctot.com" class="play-btn">▶ Play Now in Browser</a>
+  <a href="https://croctot.com" class="play-small">skip install, just play in browser</a>
+</div>
+<div id="already" style="text-align:center;padding:40px;">
+  <div style="font-size:64px;">🎮</div>
+  <h1 style="margin:16px 0 8px;">CROC <span style="color:#ff6600">TOT</span></h1>
+  <p style="color:#888;margin-bottom:24px;">You already have it installed!</p>
+  <a href="https://croctot.com" style="background:#ff6600;color:#fff;padding:14px 32px;border-radius:12px;font-weight:900;font-size:16px;text-decoration:none;">▶ Play Now</a>
+</div>
+<script>
+if(window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches){
+  document.getElementById('main').style.display='none';
+  document.getElementById('already').style.display='flex';
+  document.getElementById('already').style.flexDirection='column';
+  document.getElementById('already').style.alignItems='center';
+}
+</script>
+</body>
+</html>
