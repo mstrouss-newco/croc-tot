@@ -977,6 +977,20 @@ CX.clearRect(0,0,W,H);
   if(oActive)drawOverlay();
   if(ST==="initials")drawInitials();
   if(paused&&ST==="playing")drawPaused();
+  // Draw virtual joystick on mobile during play
+  if(_joyActive&&ST==="playing"&&!paused){
+    const dx=_joyCur.x-_joyBase.x,dy=_joyCur.y-_joyBase.y;
+    const dist=Math.min(JOY_MAX,Math.sqrt(dx*dx+dy*dy));
+    const ang=Math.atan2(dy,dx);
+    const tx=_joyBase.x+Math.cos(ang)*dist,ty=_joyBase.y+Math.sin(ang)*dist;
+    // Base ring
+    CX.save();CX.globalAlpha=0.35;CX.strokeStyle="#fff";CX.lineWidth=2;
+    CX.beginPath();CX.arc(_joyBase.x,_joyBase.y,JOY_MAX,0,Math.PI*2);CX.stroke();
+    // Thumb
+    CX.globalAlpha=0.55;CX.fillStyle="#fff";
+    CX.beginPath();CX.arc(tx,ty,20,0,Math.PI*2);CX.fill();
+    CX.globalAlpha=1;CX.restore();
+  }
 }
 
 // ── backgrounds ───────────────────────────────────────────────────────────
@@ -1499,14 +1513,18 @@ function drawTitle(){
   CX.fillText("Made by Jackson",px+pr+8,py);
   CX.shadowBlur=0;CX.globalAlpha=1;CX.restore();
   if(leaderboard.length>0){CX.fillStyle="rgba(0,0,0,0.55)";CX.beginPath();CX.roundRect(W/2-130,H/2+52,260,90,10);CX.fill();CX.fillStyle="#FFD700";CX.font="bold 12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("HIGH SCORES",W/2,H/2+68);leaderboard.slice(0,4).forEach((e,i)=>{CX.fillStyle=i===0?"#FFD700":"rgba(255,255,255,0.75)";CX.font="11px Arial";CX.fillText((i+1)+". "+e.initials+"  "+e.score+"  Lv"+e.level,W/2,H/2+84+i*14);});}else{CX.fillStyle="rgba(0,0,0,0.5)";CX.beginPath();CX.roundRect(W/2-140,H/2+55,280,55,10);CX.fill();CX.fillStyle="rgba(255,255,255,0.55)";CX.font="12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("Press Enter or click Start",W/2,H/2+82);}
-  // Draw a tappable START button ON the canvas for mobile
-  if(UI.btnS&&UI.btnS.style.display!=='none'||true){
-    const bw2=160,bh2=38,bx2=W/2-bw2/2,by2=H/2+90;
-    CX.fillStyle="rgba(255,102,0,0.95)";
-    CX.beginPath();CX.roundRect(bx2,by2,bw2,bh2,10);CX.fill();
-    CX.fillStyle="#fff";CX.font="bold 18px Arial";CX.textAlign="center";CX.textBaseline="middle";
-    CX.fillText("▶  START",W/2,by2+bh2/2);
-    CX.textBaseline="alphabetic";
+  // Big tap-to-start button on canvas — always visible on mobile
+  {
+    const bw2=200,bh2=52,bx2=W/2-bw2/2,by2=H/2+82;
+    // Pulsing glow
+    const pulse=0.85+0.15*Math.sin(titleT*0.004);
+    CX.save();CX.shadowColor="#ff6600";CX.shadowBlur=20*pulse;
+    CX.fillStyle="rgba(255,102,0,"+pulse+")";
+    CX.beginPath();CX.roundRect(bx2,by2,bw2,bh2,14);CX.fill();
+    CX.shadowBlur=0;
+    CX.fillStyle="#fff";CX.font="bold 22px Arial";CX.textAlign="center";CX.textBaseline="middle";
+    CX.fillText("▶  TAP TO PLAY",W/2,by2+bh2/2);
+    CX.restore();CX.textBaseline="alphabetic";
   }
   CX.textBaseline="alphabetic";
 }
@@ -1579,41 +1597,53 @@ function _getTouchPos(touch){
   return {x:(touch.clientX-r.left)*(W/r.width), y:(touch.clientY-r.top)*(H/r.height)};
 }
 // Tap canvas to start game (especially useful in landscape where buttons may be hidden)
-CV.addEventListener("click",e=>{
-  tryVoice();
-  if(ST==="title"){startGame();return;}
-  // Pause/resume tap on canvas during play
-  if(ST==="playing"){/* touch drag handles movement, canvas click does nothing */}
-});
+// ── Virtual joystick for mobile ───────────────────────────────────────────────
+// Touch anywhere: that point becomes the joystick base.
+// Drag from there: direction + distance controls movement.
+let _joyBase={x:0,y:0},_joyCur={x:0,y:0},_joyActive=false;
+const JOY_DEAD=8, JOY_MAX=60; // dead zone + max radius
+
+function _getTouchCanvas(touch){
+  const r=CV.getBoundingClientRect();
+  return{x:(touch.clientX-r.left)*(W/r.width),y:(touch.clientY-r.top)*(H/r.height)};
+}
 
 CV.addEventListener("touchstart",e=>{
-  tryVoice();e.preventDefault();
+  e.preventDefault();
+  tryVoice();
   for(const t of e.changedTouches){
     if(_tid===null){
       _tid=t.identifier;
-      const p=_getTouchPos(t);
-      if(ST==="playing"&&!paused&&G.tot){
-        keys.ArrowLeft=p.x<G.tot.x+G.tot.w/2-8;keys.ArrowRight=p.x>G.tot.x+G.tot.w/2+8;
-        keys.ArrowUp=p.y<G.tot.y+G.tot.h/2-8;keys.ArrowDown=p.y>G.tot.y+G.tot.h/2+8;
-      } else if(ST==="title"||ST==="initials"){
-        // tap anywhere to start / submit on non-playing states
+      const p=_getTouchCanvas(t);
+      if(ST==="title"){startGame();return;}
+      if(ST==="playing"&&!paused){
+        _joyBase={x:p.x,y:p.y};_joyCur={x:p.x,y:p.y};_joyActive=true;
       }
     }
   }
 },{passive:false});
+
 CV.addEventListener("touchmove",e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
-    if(t.identifier===_tid&&ST==="playing"&&!paused&&G.tot){
-      const p=_getTouchPos(t);
-      keys.ArrowLeft=p.x<G.tot.x+G.tot.w/2-10;keys.ArrowRight=p.x>G.tot.x+G.tot.w/2+10;
-      keys.ArrowUp=p.y<G.tot.y+G.tot.h/2-10;keys.ArrowDown=p.y>G.tot.y+G.tot.h/2+10;
+    if(t.identifier===_tid&&_joyActive&&ST==="playing"&&!paused){
+      const p=_getTouchCanvas(t);
+      _joyCur={x:p.x,y:p.y};
+      const dx=_joyCur.x-_joyBase.x, dy=_joyCur.y-_joyBase.y;
+      keys.ArrowLeft=dx<-JOY_DEAD;
+      keys.ArrowRight=dx>JOY_DEAD;
+      keys.ArrowUp=dy<-JOY_DEAD;
+      keys.ArrowDown=dy>JOY_DEAD;
     }
   }
 },{passive:false});
+
 CV.addEventListener("touchend",e=>{
   for(const t of e.changedTouches){
-    if(t.identifier===_tid){_tid=null;keys.ArrowLeft=keys.ArrowRight=keys.ArrowUp=keys.ArrowDown=false;}
+    if(t.identifier===_tid){
+      _tid=null;_joyActive=false;
+      keys.ArrowLeft=keys.ArrowRight=keys.ArrowUp=keys.ArrowDown=false;
+    }
   }
 },{passive:false});
 
