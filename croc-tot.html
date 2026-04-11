@@ -51,25 +51,21 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
   #uh{min-height:10px;gap:2px;}
   .upg{font-size:9px;padding:0px 4px;}
   #msg{font-size:10px;min-height:10px;}
-  /* Canvas fills remaining height */
-  #canvasWrap{flex:1;position:relative;min-height:0;}
-  canvas{width:auto !important;height:100% !important;max-height:none;display:block;margin:0 auto;}
-  /* Buttons float over bottom of canvas */
+  /* Canvas fills remaining height minus small button row */
+  #canvasWrap{flex:1;position:relative;min-height:0;display:flex;align-items:center;}
+  canvas{width:auto !important;height:100% !important;max-height:calc(100dvh - 80px);display:block;margin:0 auto;}
+  /* Buttons: compact row, still visible */
   #btnRow{
-    position:absolute;bottom:8px;left:0;right:0;
-    display:flex;justify-content:center;gap:6px;
-    pointer-events:none;
+    display:flex;justify-content:center;gap:4px;flex-wrap:wrap;
+    width:100%;padding:2px 0;
   }
   #btnRow .btn{
-    pointer-events:auto;
-    background:rgba(255,102,0,0.9) !important;
-    backdrop-filter:blur(4px);
-    -webkit-backdrop-filter:blur(4px);
-    font-size:13px;padding:8px 18px;
-    box-shadow:0 2px 12px rgba(0,0,0,0.5);
+    background:rgba(255,102,0,0.95) !important;
+    font-size:12px;padding:6px 14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
-  #btnRow #btnP{background:rgba(30,30,60,0.9) !important;}
-  #btnRow #btnNew{background:rgba(60,30,10,0.9) !important;}
+  #btnRow #btnP{background:rgba(30,30,60,0.95) !important;}
+  #btnRow #btnNew{background:rgba(60,30,10,0.95) !important;}
   /* Hide non-essential UI */
   #devRow{display:none !important;}
   #pwa-banner{display:none !important;}
@@ -132,12 +128,6 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
   </div>
   <div id="canvasWrap">
     <canvas id="c"></canvas>
-    <div id="btnRow">
-      <button class="btn" id="btnS" style="display:none">&#9654; Start</button>
-      <button class="btn" id="btnR" style="display:none">&#8635; Play Again</button>
-      <button class="btn" id="btnP" style="display:none;background:#334;border:1px solid #556">&#9646;&#9646; Pause (P)</button>
-      <button class="btn" id="btnNew" style="display:none;background:#442211;border:1px solid #884422">&#8617; Start Over</button>
-    </div>
     <!-- Mobile initials input overlay -->
     <div id="initOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:10px;">
       <div id="initTitle" style="color:#FFD700;font-size:22px;font-weight:900;">GAME OVER</div>
@@ -146,6 +136,12 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
         style="font-size:36px;font-weight:900;text-align:center;letter-spacing:12px;text-transform:uppercase;width:140px;padding:10px;border-radius:10px;border:2px solid #FFD700;background:#111;color:#FFD700;outline:none;">
       <button id="initSubmit" style="padding:12px 32px;font-size:16px;font-weight:900;border-radius:10px;border:none;background:#ff6600;color:#fff;cursor:pointer;">Done ✓</button>
     </div>
+  </div>
+  <div id="btnRow">
+    <button class="btn" id="btnS" style="display:none">&#9654; Start</button>
+    <button class="btn" id="btnR" style="display:none">&#8635; Play Again</button>
+    <button class="btn" id="btnP" style="display:none;background:#334;border:1px solid #556">&#9646;&#9646; Pause (P)</button>
+    <button class="btn" id="btnNew" style="display:none;background:#442211;border:1px solid #884422">&#8617; Start Over</button>
   </div>
   <div id="msg"></div>
 </div>
@@ -1503,6 +1499,15 @@ function drawTitle(){
   CX.fillText("Made by Jackson",px+pr+8,py);
   CX.shadowBlur=0;CX.globalAlpha=1;CX.restore();
   if(leaderboard.length>0){CX.fillStyle="rgba(0,0,0,0.55)";CX.beginPath();CX.roundRect(W/2-130,H/2+52,260,90,10);CX.fill();CX.fillStyle="#FFD700";CX.font="bold 12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("HIGH SCORES",W/2,H/2+68);leaderboard.slice(0,4).forEach((e,i)=>{CX.fillStyle=i===0?"#FFD700":"rgba(255,255,255,0.75)";CX.font="11px Arial";CX.fillText((i+1)+". "+e.initials+"  "+e.score+"  Lv"+e.level,W/2,H/2+84+i*14);});}else{CX.fillStyle="rgba(0,0,0,0.5)";CX.beginPath();CX.roundRect(W/2-140,H/2+55,280,55,10);CX.fill();CX.fillStyle="rgba(255,255,255,0.55)";CX.font="12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("Press Enter or click Start",W/2,H/2+82);}
+  // Draw a tappable START button ON the canvas for mobile
+  if(UI.btnS&&UI.btnS.style.display!=='none'||true){
+    const bw2=160,bh2=38,bx2=W/2-bw2/2,by2=H/2+90;
+    CX.fillStyle="rgba(255,102,0,0.95)";
+    CX.beginPath();CX.roundRect(bx2,by2,bw2,bh2,10);CX.fill();
+    CX.fillStyle="#fff";CX.font="bold 18px Arial";CX.textAlign="center";CX.textBaseline="middle";
+    CX.fillText("▶  START",W/2,by2+bh2/2);
+    CX.textBaseline="alphabetic";
+  }
   CX.textBaseline="alphabetic";
 }
 
@@ -1576,8 +1581,9 @@ function _getTouchPos(touch){
 // Tap canvas to start game (especially useful in landscape where buttons may be hidden)
 CV.addEventListener("click",e=>{
   tryVoice();
-  if(ST==="title")startGame();
-  else if(ST==="initials"){/* handled by keyboard */}
+  if(ST==="title"){startGame();return;}
+  // Pause/resume tap on canvas during play
+  if(ST==="playing"){/* touch drag handles movement, canvas click does nothing */}
 });
 
 CV.addEventListener("touchstart",e=>{
