@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Croc Tot">
+<meta name="application-name" content="Croc Tot">
+<meta name="theme-color" content="#0a0a1a">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAADsQAAA7EB9YPtSQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZw2GSmkAAAKVSURBVHic7doxCoMwFAbgpLiAJ3DxBh7Ai3gCwUE8QLGDXsDFRRARRMQDuDi4uLi4uIh4ALdASgkFaWlL+d97eS8QyJcvyZ8QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADgXwkhpJSyrutVSrkZY0IIYRpjjHPOOQAAAADgb7TWWmvtnHPOOQAAAABgrTXGGGOMcc45AAAAAGCMMcYYY4wx5pwDAAAAAMYYY4wxxhjjnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAMYYY4wxxhjnnAMAAAAAxhhjjDHGGOecAwAAAADGGGOMMcYY55wDAAAAAIAxQ2utAQAAAABJRU5ErkJggg==">
 <meta name="theme-color" content="#0a0a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -40,8 +47,12 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
   .btn{padding:10px 18px;font-size:15px;}
 }
 </style>
+
 </head>
 <body>
+<div id="pwa-banner" style="display:none;background:#ff6600;color:#fff;text-align:center;padding:8px 12px;font-size:12px;font-weight:700;width:100%;position:sticky;top:0;z-index:999;cursor:pointer;" onclick="this.style.display='none'">
+  📱 Add to Home Screen for fullscreen! (Share → Add to Home Screen) &nbsp;✕
+</div>
 <div id="wrap">
   <div id="hud">
     <div class="hb">Score:<b id="sc">0</b></div>
@@ -66,6 +77,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
     <button class="btn" id="btnS" style="display:none">&#9654; Start</button>
     <button class="btn" id="btnR" style="display:none">&#8635; Play Again</button>
     <button class="btn" id="btnP" style="display:none;background:#334;border:1px solid #556">&#9646;&#9646; Pause (P)</button>
+    <button class="btn" id="btnNew" style="display:none;background:#442211;border:1px solid #884422">&#8617; Start Over</button>
   </div>
 </div>
 
@@ -90,7 +102,7 @@ const W=600,H=340;
 const $=id=>document.getElementById(id);
 const UI={sc:$("sc"),bs:$("bs"),lv:$("lv"),lel:$("lel"),tim:$("tim"),pwr:$("pwrEl"),
   msg:$("msg"),bw:$("bw"),bi:$("bi"),bl:$("bl"),tf:$("tf"),pf:$("pf"),uh:$("uh"),
-  btnS:$("btnS"),btnR:$("btnR"),btnP:$("btnP")};
+  btnS:$("btnS"),btnR:$("btnR"),btnP:$("btnP"),btnNew:$("btnNew")};
 
 // ── state ─────────────────────────────────────────────────────────────────
 FACE_IMG=(()=>{const i=new Image();i.src="data:image/jpeg;base64,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";return i;})();
@@ -285,7 +297,9 @@ const PWUPS=[
   {id:"shield",label:"SHIELD",col:"#44aaff"},{id:"magnet",label:"MAGNET",col:"#ffcc00"},
   {id:"baby",  label:"BABY",  col:"#ffaacc"},{id:"bigShot",label:"BIG",  col:"#ff6600"},{id:"freeze", label:"FREEZE",col:"#aaeeff"},
   {id:"ghost", label:"GHOST", col:"#ccaaff"},{id:"nuke",   label:"NUKE", col:"#ffee22"},
-  {id:"life",  label:"1UP",   col:"#ff4466"},{id:"dbl",    label:"2X",   col:"#FFD700"}
+  {id:"life",  label:"1UP",   col:"#ff4466"},{id:"dbl",    label:"2X",   col:"#FFD700"},
+  {id:"bomb",  label:"BOMB",  col:"#ff4400"},{id:"missile",label:"MISSILE",col:"#ff8800"},
+  {id:"laser", label:"LASER", col:"#44ffff"}
 ];
 
 // ── game state ────────────────────────────────────────────────────────────
@@ -293,8 +307,8 @@ function resetG(){
   G={score:0,lives:5,level:1,lStart:0,lElapsed:0,LDUR:90000,lastTime:0,
     tot:{x:80,y:H/2,w:36,h:30,vx:0,vy:0,dir:1,inv:0,wf:0},
     enemies:[],items:[],pwups:[],shots:[],fries:[],parts:[],pops:[],clouds:[],bgd:[],
-    upg:{shield:false,magnet:false,baby:false,bigShot:false,freeze:false,ghost:false,dbl:false},
-    shieldHp:0,ghostT:0,freezeT:0,dblT:0,baby:null,shootT:0,
+    upg:{shield:false,magnet:false,baby:false,bigShot:false,freeze:false,ghost:false,dbl:false,bomb:false,missile:false,laser:false},
+    shieldHp:0,ghostT:0,freezeT:0,dblT:0,laserT:0,baby:null,shootT:0,bombCoolT:0,missileCoolT:0,
     boss:null,bActive:false,bBeaten:false,bHits:0,stunned:false,stunT:0,bAge:0,
     flash:0,flashCol:"#ff8800",spawnET:0,spawnPT:0,
     eventT:0,lastEventT:-999,waveNum:1,frenzyT:0,
@@ -318,7 +332,7 @@ function updHud(){
   const add=t=>{const d=document.createElement("span");d.className="upg";d.textContent=t;UI.uh.appendChild(d);};
   if(powerLevel>=2)add("DOUBLE");if(powerLevel>=3)add("TRIPLE");if(powerLevel>=4)add("RAPID");
   if(G.upg.shield&&G.shieldHp>0)add("SHIELD x"+G.shieldHp);if(G.upg.magnet)add("MAGNET");if(G.upg.baby)add("BABY");if(G.upg.bigShot)add("BIG");
-  if(G.freezeT>0)add("FREEZE");if(G.ghostT>0)add("GHOST");if(G.dblT>0)add("2X");
+  if(G.freezeT>0)add("FREEZE");if(G.ghostT>0)add("GHOST");if(G.dblT>0)add("2X");if(G.upg.bomb&&G.bombCount>0)add("BOMB x"+(G.bombCount||0));if(G.upg.missile&&G.missileCount>0)add("MISSILE x"+(G.missileCount||0));if(G.upg.laser&&G.laserT>0)add("LASER "+(G.laserT>0?Math.ceil(G.laserT)+"s":""));
 }
 
 // ── difficulty ────────────────────────────────────────────────────────────
@@ -377,9 +391,18 @@ function fire(){
     for(const a of ang)G.fries.push({x:ox,y:oy,vx:spd,vy:Math.sin(a)*spd*0.35,w:big?10:6,h:big?28:18,life:1.1,spent:false,wtype:G.level});
     if(G.baby&&G.upg.baby)G.fries.push({x:G.baby.x+G.baby.w/2,y:G.baby.y,vx:spd,vy:0,w:5,h:14,life:1.0,spent:false,wtype:G.level});
   }else{
-    for(const a of ang)G.shots.push({x:ox,y:oy,vx:spd,vy:Math.sin(a)*spd*0.4,len:big?22:12,w:big?8:5,life:0.85,spent:false});
+    if(G.upg.laser&&G.laserT>0){
+      // LASER: one full-width piercing beam
+      G.shots.push({x:ox,y:oy,vx:spd,vy:0,len:W,w:big?12:7,life:0.12,spent:false,stype:'laser'});
+    }else{
+      for(const a of ang)G.shots.push({x:ox,y:oy,vx:spd,vy:Math.sin(a)*spd*0.4,len:big?22:12,w:big?8:5,life:0.85,spent:false});
+    }
     if(G.baby&&G.upg.baby)G.shots.push({x:G.baby.x+G.baby.w/2,y:G.baby.y+G.baby.h/2,vx:spd,vy:0,len:8,w:4,life:0.75,spent:false});
   }
+  // BOMB — fires every 4th shot
+  if(G.upg.bomb&&G.bombCount>0){G.bombCoolT=(G.bombCoolT||0)+1;if(G.bombCoolT>=4){G.bombCoolT=0;G.bombCount--;G.shots.push({x:ox,y:oy,vx:320,vy:rnd(-200,200),len:18,w:18,life:3.5,spent:false,stype:'bomb',bounces:4});if(G.bombCount<=0){G.upg.bomb=false;updHud();}}}
+  // MISSILE — fires every 8th shot
+  if(G.upg.missile&&G.missileCount>0){G.missileCoolT=(G.missileCoolT||0)+1;if(G.missileCoolT>=8){G.missileCoolT=0;G.missileCount--;G.shots.push({x:ox,y:oy,vx:280,vy:0,len:22,w:10,life:4.0,spent:false,stype:'missile',age:0});if(G.missileCount<=0){G.upg.missile=false;updHud();}}}
 }
 
 // ── boss ─────────────────────────────────────────────────────────────────
@@ -478,6 +501,7 @@ function initGame(){
   UI.pf.style.width="0%";UI.bw.style.display="none";UI.tf.style.width="0%";
   UI.btnS.style.display="none";UI.btnR.style.display="none";
   if(UI.btnP)UI.btnP.style.display="";
+  if(UI.btnNew)UI.btnNew.style.display="none";
   
   setMsg("");updHud();oActive=false;
   for(let i=0;i<7;i++)spawnItem();
@@ -656,15 +680,48 @@ function update(now){
     }
   }
 
-  // shots
-  for(const s of G.shots){s.x+=s.vx*f;s.y+=s.vy*f;s.life-=f;}
-  G.shots=G.shots.filter(s=>!s.spent&&s.life>0&&s.x<W+20&&s.x>-20&&s.y<H+20&&s.y>-20);
+  // laser timer
+  if(G.upg.laser&&G.laserT>0){G.laserT-=f;if(G.laserT<=0){G.upg.laser=false;updHud();setMsg("Laser expired",800);}}
+  // shots — with special weapon physics
+  for(const s of G.shots){
+    // Homing missile tracks nearest target
+    if(s.stype==='missile'){
+      s.age=(s.age||0)+f;
+      const targets=G.bActive&&G.boss?[{x:G.boss.x+G.boss.w/2,y:G.boss.y+G.boss.h/2}]:G.enemies.filter(e=>!e.spent&&e.x>s.x-50);
+      if(targets.length>0){
+        const tgt=targets.reduce((a,b)=>Math.abs(b.x-s.x)<Math.abs(a.x-s.x)?b:a);
+        const tx=tgt.x-(s.stype==='missile'?0:0),ty='y' in tgt?tgt.y:tgt.y;
+        const dx=(tx||tgt.x)-s.x, dy=(ty||tgt.y)-s.y;
+        const ang2=Math.atan2(dy,dx);
+        const turnRate=2.5*f;
+        const curAng=Math.atan2(s.vy,s.vx);
+        let diff=ang2-curAng;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
+        const newAng=curAng+Math.sign(diff)*Math.min(Math.abs(diff),turnRate);
+        const spd2=420;s.vx=Math.cos(newAng)*spd2;s.vy=Math.sin(newAng)*spd2;
+      }
+    }
+    // Bomb bounces off walls
+    if(s.stype==='bomb'){
+      if((s.y<=12||s.y>=H-12)&&(s.bounces||0)>0){s.vy=-s.vy;s.bounces--;}
+      s.y=cl(s.y,12,H-12);
+    }
+    s.x+=s.vx*f;s.y+=s.vy*f;s.life-=f;
+  }
+  G.shots=G.shots.filter(s=>!s.spent&&s.life>0&&s.x<W+40&&s.x>-20&&s.y<H+20&&s.y>-20);
   for(const ff of G.fries){ff.x+=ff.vx*f;ff.y+=ff.vy*f;ff.life-=f;}
   G.fries=G.fries.filter(ff=>!ff.spent&&ff.life>0&&ff.x<W+20&&ff.x>-20&&ff.y<H+20&&ff.y>-20);
 
+  // bomb explosion helper
+  function bombExplode(bx,by){burst(bx,by,"#ff4400",14,true);G.flash=0.25;G.flashCol="#ff4400";SFX.nuke&&SFX.nuke();tone(120,0.3,0.2,"sawtooth");G.enemies.forEach(e=>{if(!e.spent){const dx=e.x+e.w/2-bx,dy=e.y+e.h/2-by;if(dx*dx+dy*dy<70*70){e.hp-=3;if(e.hp<=0){e.spent=true;SFX.enemyDie();const pts=(E_PTS[e.etype]||3)*(G.dblT>0?2:1);G.score+=pts;UI.sc.textContent=G.score;}}}});if(G.boss&&G.bActive)damageBoss(3);}
+
   // shots vs enemies
   if(!G.bActive){
-    for(const s of G.shots){if(s.spent)continue;for(const e of G.enemies){if(e.spent)continue;if(overlap({x:s.x-s.len/2,y:s.y-s.w/2,w:s.len,h:s.w},e,0)){e.hp--;if(powerLevel<4)s.spent=true;if(e.hp<=0){e.spent=true;burst(e.x+e.w/2,e.y+e.h/2,"#88ff44",7);SFX.enemyDie();const base=E_PTS[e.etype]||3,pts=G.dblT>0?base*2:base;pop(e.x+e.w/2,e.y,"+"+pts,"#ffee00");G.score+=pts;UI.sc.textContent=G.score;if(G.score>best){best=G.score;UI.bs.textContent=best;}}else burst(e.x,e.y,"#aaffaa",3);break;}}}
+    for(const s of G.shots){if(s.spent)continue;for(const e of G.enemies){if(e.spent)continue;if(overlap({x:s.x-s.len/2,y:s.y-s.w/2,w:s.len,h:s.w},e,0)){
+      if(s.stype==='bomb'){s.spent=true;bombExplode(s.x,s.y);break;}
+      const dmg=s.stype==='missile'?4:1;
+      e.hp-=dmg;
+      if(s.stype!=='laser'&&powerLevel<4)s.spent=true; // laser pierces
+      if(e.hp<=0){e.spent=true;burst(e.x+e.w/2,e.y+e.h/2,"#88ff44",7);SFX.enemyDie();const base=E_PTS[e.etype]||3,pts=G.dblT>0?base*2:base;pop(e.x+e.w/2,e.y,"+"+pts,"#ffee00");G.score+=pts;UI.sc.textContent=G.score;if(G.score>best){best=G.score;UI.bs.textContent=best;}}else burst(e.x,e.y,"#aaffaa",3);if(s.stype!=='laser')break;}}}
     G.shots=G.shots.filter(s=>!s.spent);G.enemies=G.enemies.filter(e=>!e.spent);
   }
 
@@ -742,6 +799,9 @@ function applyPwup(id){
   else if(id==="nuke"){burst(W/2,H/2,"#ffee22",12,true);G.enemies=[];if(G.boss)G.boss.projs=[];G.score+=15;UI.sc.textContent=G.score;setMsg("NUKE! +15",1800);G.flash=0.5;G.flashCol="#ffee22";SFX.nuke();}
   else if(id==="life"){G.lives=Math.min(G.lives+1,9);UI.lv.textContent=G.lives;setMsg("EXTRA LIFE! ("+G.lives+")",1800);}
   else if(id==="dbl"){u.dbl=true;G.dblT=12;setMsg("2X POINTS 12s!",1800);}
+  else if(id==="bomb"){u.bomb=true;G.bombCount=(G.bombCount||0)+5;setMsg("BOMBS x5! Fire away!",1800);notify("BOMBS x5! They bounce!","💣","#ff4400");}
+  else if(id==="missile"){u.missile=true;G.missileCount=(G.missileCount||0)+3;setMsg("HOMING MISSILES x3!!",1800);notify("HOMING MISSILES x3! They track enemies!","🚀","#ff8800");}
+  else if(id==="laser"){u.laser=true;G.laserT=6;setMsg("LASER BEAM 6s!",1800);notify("LASER BEAM! Pierces everything!","⚡","#44ffff");}
   updHud();
 }
 
@@ -995,8 +1055,57 @@ function drawTotShape(tx,ty,tw,th,dir,wf,baby){
   if(!baby&&G.upg&&G.upg.shield&&G.shieldHp>0){CX.strokeStyle="rgba(80,180,255,"+(0.5+0.2*Math.sin(wf))+")";CX.lineWidth=3;CX.beginPath();CX.arc(0,0,tw*0.85,0,Math.PI*2);CX.stroke();}
   CX.restore();
 }
-function drawShots(){for(const s of G.shots){CX.save();CX.shadowColor="#ff3300";CX.shadowBlur=5;CX.fillStyle="#ff5500";CX.beginPath();CX.roundRect(s.x-s.len/2,s.y-s.w/2,s.len,s.w,3);CX.fill();CX.fillStyle="#ffee00";CX.beginPath();CX.roundRect(s.x-s.len/2+2,s.y-s.w/2+1,s.len-4,s.w-2,2);CX.fill();CX.shadowBlur=0;CX.restore();}}
-function drawFries(){for(const ff of G.fries){CX.save();CX.translate(ff.x,ff.y);const wt=ff.wtype||1;
+function drawShots(){
+  for(const s of G.shots){
+    CX.save();CX.translate(s.x,s.y);
+    if(s.stype==='bomb'){
+      // Bouncing bomb — black circle with lit fuse
+      const bob=Math.sin(s.life*18)*2;
+      CX.fillStyle="#222";CX.beginPath();CX.arc(0,bob,s.w/2,0,Math.PI*2);CX.fill();
+      CX.strokeStyle="#555";CX.lineWidth=2;CX.beginPath();CX.arc(0,bob,s.w/2,0,Math.PI*2);CX.stroke();
+      // Fuse spark
+      const sparkPulse=Math.sin(s.life*25);
+      CX.strokeStyle="#ff6600";CX.lineWidth=2;CX.beginPath();CX.moveTo(0,bob-s.w/2);CX.lineTo(4,bob-s.w/2-6+sparkPulse*2);CX.stroke();
+      CX.fillStyle=sparkPulse>0?"#ffee00":"#ff4400";CX.beginPath();CX.arc(4,bob-s.w/2-6+sparkPulse*2,3,0,Math.PI*2);CX.fill();
+      // Danger glow
+      CX.shadowColor="#ff4400";CX.shadowBlur=12;CX.fillStyle="rgba(255,80,0,0.3)";CX.beginPath();CX.arc(0,bob,s.w/2+4,0,Math.PI*2);CX.fill();CX.shadowBlur=0;
+    } else if(s.stype==='missile'){
+      // Homing missile — rocket shape pointing in direction of travel
+      const ang=Math.atan2(s.vy,s.vx);
+      CX.rotate(ang);
+      // Body
+      CX.fillStyle="#cc4400";CX.beginPath();CX.moveTo(s.len/2,0);CX.lineTo(-s.len/2,-s.w/2);CX.lineTo(-s.len/2,s.w/2);CX.closePath();CX.fill();
+      CX.fillStyle="#ff6600";CX.beginPath();CX.moveTo(s.len/2,0);CX.lineTo(0,-s.w/3);CX.lineTo(0,s.w/3);CX.closePath();CX.fill();
+      // Fins
+      CX.fillStyle="#884400";CX.beginPath();CX.moveTo(-s.len/2,0);CX.lineTo(-s.len/2-8,-s.w);CX.lineTo(-s.len/2+4,0);CX.closePath();CX.fill();
+      CX.beginPath();CX.moveTo(-s.len/2,0);CX.lineTo(-s.len/2-8,s.w);CX.lineTo(-s.len/2+4,0);CX.closePath();CX.fill();
+      // Flame trail
+      CX.fillStyle="rgba(255,200,50,"+(0.5+0.5*Math.sin(s.life*20))+")";CX.beginPath();CX.ellipse(-s.len/2-6,0,8+Math.random()*6,4,0,0,Math.PI*2);CX.fill();
+      // Glow
+      CX.shadowColor="#ff8800";CX.shadowBlur=10;CX.strokeStyle="#ff4400";CX.lineWidth=1;CX.beginPath();CX.moveTo(s.len/2,0);CX.lineTo(-s.len/2,0);CX.stroke();CX.shadowBlur=0;
+    } else if(s.stype==='laser'){
+      // Laser beam — full width cyan piercing
+      const pulse=0.7+0.3*Math.sin(s.life*60);
+      CX.shadowColor="#44ffff";CX.shadowBlur=18;
+      CX.fillStyle=`rgba(0,255,255,${pulse})`;CX.fillRect(0,-s.w/2,s.len,s.w);
+      CX.fillStyle=`rgba(255,255,255,${pulse*0.8})`;CX.fillRect(0,-s.w/4,s.len,s.w/2);
+      CX.shadowBlur=0;
+    } else {
+      // Normal shot
+      CX.shadowColor="#ff3300";CX.shadowBlur=5;CX.fillStyle="#ff5500";CX.beginPath();CX.roundRect(-s.len/2,-s.w/2,s.len,s.w,3);CX.fill();CX.fillStyle="#ffee00";CX.beginPath();CX.roundRect(-s.len/2+2,-s.w/2+1,s.len-4,s.w-2,2);CX.fill();CX.shadowBlur=0;
+    }
+    CX.restore();
+  }
+}
+function drawFries(){for(const ff of G.fries){CX.save();CX.translate(ff.x,ff.y);
+  // Special weapons also appear in boss fights
+  if(ff.stype==='bomb'||ff.stype==='missile'){
+    // reuse shot drawing style for these
+    if(ff.stype==='bomb'){CX.fillStyle="#222";CX.beginPath();CX.arc(0,0,9,0,Math.PI*2);CX.fill();CX.fillStyle="#ff6600";CX.beginPath();CX.arc(4,-9,3,0,Math.PI*2);CX.fill();}
+    else{const ang=Math.atan2(ff.vy,ff.vx);CX.rotate(ang);CX.fillStyle="#cc4400";CX.beginPath();CX.moveTo(11,0);CX.lineTo(-11,-5);CX.lineTo(-11,5);CX.closePath();CX.fill();}
+    CX.restore();continue;
+  }
+  const wt=ff.wtype||1;
   if(wt===1){// Level 1: french fries (golden yellow)
     CX.rotate(ff.vx>0?0.3:-0.3);CX.fillStyle="#D4A830";CX.beginPath();CX.roundRect(-ff.w/2,-ff.h/2,ff.w,ff.h,2);CX.fill();CX.fillStyle="#FFE060";CX.beginPath();CX.roundRect(-ff.w/2+1,-ff.h/2+1,ff.w-2,ff.h-4,1);CX.fill();
   }else if(wt===2){// Level 2: glowing hot ladle
@@ -1316,14 +1425,11 @@ function drawTitle(){
 
 // ── game loop ─────────────────────────────────────────────────────────────
 function loop(now){
-  if(paused){G.lastTime=now;// ── Speed control ─────────────────────────────────────────────────────────
-
-// ── Dev level picker ──────────────────────────────────────────────────────
-document.getElementById('devBtn').addEventListener('mouseout',()=>{document.getElementById('devBtn').style.opacity='0.08';});
-
-
-
-requestAnimationFrame(loop);return;}
+  if(paused){
+    G.lastTime=now;
+    try{draw();}catch(e){}
+    requestAnimationFrame(loop);return;
+  }
   if(G.lastTime)dt=Math.min((now-G.lastTime)/1000,0.04);
   try{draw();}catch(e){console.error("DRAW:",e.message);}
   try{update(now);}catch(e){console.error("UPDATE:",e.message);if(G.lastTime)G.lastTime=now;}
@@ -1334,7 +1440,12 @@ requestAnimationFrame(loop);return;}
 document.addEventListener("keydown",e=>{
   keys[e.code]=true;
   if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code))e.preventDefault();
-  if(e.code==="KeyP"&&ST==="playing"){paused=!paused;if(UI.btnP)UI.btnP.innerHTML=paused?"&#9654; Resume (P)":"&#9646;&#9646; Pause (P)";}
+  if(e.code==="KeyP"&&ST==="playing"){
+    paused=!paused;
+    if(UI.btnP)UI.btnP.innerHTML=paused?"&#9654; Resume (P)":"&#9646;&#9646; Pause (P)";
+    if(UI.btnNew)UI.btnNew.style.display=paused?'':'none';
+    if(paused)stopBg();else startBg();
+  }
   if(e.code==="Backquote"){devClick();devClick();devClick();}  // ` key opens dev menu
   if(ST==="initials"){
     if(e.key.length===1&&e.key.match(/[a-zA-Z]/)&&initStr.length<3)initStr+=e.key.toUpperCase();
@@ -1385,10 +1496,23 @@ CV.addEventListener("touchend",e=>{
 
 UI.btnS.addEventListener("click",startGame);
 UI.btnR.addEventListener("click",startGame);
-if(UI.btnP)UI.btnP.addEventListener("click",()=>{if(ST!=="playing")return;paused=!paused;UI.btnP.innerHTML=paused?"&#9654; Resume (P)":"&#9646;&#9646; Pause (P)";});
+if(UI.btnP)UI.btnP.addEventListener("click",()=>{
+  if(ST!=="playing")return;
+  paused=!paused;
+  UI.btnP.innerHTML=paused?"&#9654; Resume (P)":"&#9646;&#9646; Pause (P)";
+  if(UI.btnNew)UI.btnNew.style.display=paused?'':'none';
+  if(paused)stopBg();else startBg();});
 
+if(UI.btnNew)UI.btnNew.addEventListener("click",()=>{
+  paused=false;if(UI.btnNew)UI.btnNew.style.display='none';
+  startGame();
+});
 setTimeout(()=>{UI.btnS.style.display="";},200);
 if(window.speechSynthesis){speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();speechSynthesis.getVoices();}
+// Show "Add to Home Screen" hint on mobile after 3s if not installed
+if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)&&!window.navigator.standalone){
+  setTimeout(()=>{const b=document.getElementById('pwa-banner');if(b)b.style.display='block';},3000);
+}
 requestAnimationFrame(loop);
 </script>
 </body>
