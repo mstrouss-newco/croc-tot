@@ -1,1 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Riley's Garden 🌸</title>
+<link rel="manifest" href="/riley/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Riley's Garden">
+<link rel="apple-touch-icon" href="/riley/icon.png">
+<meta name="theme-color" content="#ff6b9d">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
 
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: #1a0a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: 'Fredoka One', cursive;
+    touch-action: none;
+  }
+
+  #game-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    height: 100dvh;
+    max-height: 932px;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  #ui-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px 8px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent);
+    pointer-events: none;
+  }
+
+  #hud-left { display: flex; flex-direction: column; gap: 2px; }
+  #level-badge {
+    font-family: 'Fredoka One', cursive;
+    font-size: 13px;
+    color: #ffe066;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    letter-spacing: 0.5px;
+  }
+  #score-display {
+    font-family: 'Fredoka One', cursive;
+    font-size: 22px;
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  #lives-display {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .life-heart {
+    font-size: 26px;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+  }
+
+  #collect-bar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 16px;
+    flex-wrap: wrap;
+    pointer-events: none;
+  }
+
+  .collect-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+  }
+  .collect-dot.filled {
+    background: #ffe066;
+    border-color: #ff9900;
+    transform: scale(1.15);
+    box-shadow: 0 0 8px #ffcc00;
+  }
+
+  /* Screens */
+  .screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    pointer-events: all;
+  }
+
+  #start-screen {
+    background: linear-gradient(160deg, #ff6b9d 0%, #ff9a3c 40%, #ffe066 100%);
+  }
+
+  #start-screen .title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 52px;
+    color: #fff;
+    text-shadow: 0 4px 0 rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.2);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  #start-screen .subtitle {
+    font-family: 'Nunito', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 36px;
+  }
+
+  .big-emoji { font-size: 72px; margin-bottom: 16px; animation: float 2s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+  .btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 24px;
+    color: #fff;
+    background: #ff4d8a;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 48px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #c4005e, 0 10px 24px rgba(0,0,0,0.2);
+    transition: transform 0.1s, box-shadow 0.1s;
+    pointer-events: all;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c4005e, 0 4px 12px rgba(0,0,0,0.15); }
+  .btn.green { background: #4cde7a; box-shadow: 0 6px 0 #27a84f; }
+  .btn.green:active { box-shadow: 0 2px 0 #27a84f; }
+  .btn.blue { background: #4db8ff; box-shadow: 0 6px 0 #1a7dc4; }
+  .btn.blue:active { box-shadow: 0 2px 0 #1a7dc4; }
+
+  #level-complete-screen, #game-over-screen, #win-screen {
+    background: rgba(10,5,30,0.88);
+    backdrop-filter: blur(8px);
+  }
+
+  .screen-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 42px;
+    color: #ffe066;
+    text-shadow: 0 3px 12px rgba(0,0,0,0.5);
+    margin-bottom: 8px;
+  }
+  .screen-sub {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 28px;
+  }
+  .screen-emoji { font-size: 64px; margin-bottom: 12px; }
+
+  .btn-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  #level-name-toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: rgba(0,0,0,0.75);
+    border-radius: 20px;
+    padding: 14px 28px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  #level-name-toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  #level-name-toast .lnt-level { font-size: 15px; color: #ffe066; margin-bottom: 2px; }
+  #level-name-toast .lnt-name { font-size: 26px; color: #fff; }
+
+  #sting-flash {
+    position: absolute;
+    top:0;left:0;right:0;bottom:0;
+    background: rgba(255,80,80,0.4);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  #sting-flash.show { opacity: 1; }
+
+  .hidden { display: none !important; }
+
+  #pause-btn {
+    position: absolute;
+    top: 10px; right: 14px;
+    font-size: 26px;
+    background: rgba(0,0,0,0.3);
+    border: none;
+    border-radius: 50%;
+    width: 42px; height: 42px;
+    cursor: pointer;
+    pointer-events: all;
+    touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+
+  #pause-screen {
+    background: rgba(10,5,30,0.85);
+    backdrop-filter: blur(6px);
+  }
+</style>
+</head>
+<body>
+<div id="game-wrapper">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="ui-overlay">
+    <div id="hud" class="hidden">
+      <div id="hud-left">
+        <div id="level-badge">LEVEL 1</div>
+        <div id="score-display">⭐ 0</div>
+      </div>
+      <div id="lives-display">
+        <span class="life-heart">🍯</span>
+        <span class="life-heart">🍯</span>
+        <span class="life-heart">🍯</span>
+      </div>
+    </div>
+    <div id="collect-bar" class="hidden"></div>
+  </div>
+
+  <!-- Screens -->
+  <div class="screen" id="start-screen">
+    <div class="big-emoji">🌸</div>
+    <div class="title">Riley's<br>Garden!</div>
+    <div class="subtitle">Pick flowers & fruit — dodge the bees! 🐝</div>
+    <button class="btn" id="start-btn">Let's Play! 🌟</button>
+    <div style="margin-top:28px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:rgba(255,255,255,0.7);letter-spacing:1.5px;text-transform:uppercase;">🎮 Built by Riley</div>
+  </div>
+
+  <div class="screen hidden" id="level-complete-screen">
+    <div class="screen-emoji" id="lc-emoji">🌟</div>
+    <div class="screen-title">Amazing!</div>
+    <div class="screen-sub" id="lc-sub">You collected everything!</div>
+    <div class="btn-row">
+      <button class="btn green" id="next-level-btn">Next Level ➡️</button>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="game-over-screen">
+    <div class="screen-emoji">😢</div>
+    <div class="screen-title">Ouch!</div>
+    <div class="screen-sub">Too many bee stings!<br>Try again?</div>
+    <div class="btn-row">
+      <button class="btn blue" id="retry-btn">Try Again 🔄</button>
+      <button class="btn" id="go-home-btn">Home 🏠</button>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="win-screen">
+    <div class="screen-emoji">🏆</div>
+    <div class="screen-title">You Win!</div>
+    <div class="screen-sub" id="win-sub">You're a garden superstar!<br>Riley is amazing! 🌟</div>
+    <button class="btn green" id="play-again-btn">Play Again! 🎉</button>
+  </div>
+
+  <div class="screen hidden" id="pause-screen">
+    <div class="screen-emoji">⏸️</div>
+    <div class="screen-title">Paused</div>
+    <div class="btn-row">
+      <button class="btn green" id="resume-btn">Resume ▶️</button>
+      <button class="btn" id="pause-home-btn">Home 🏠</button>
+    </div>
+  </div>
+
+  <div id="level-name-toast">
+    <div class="lnt-level" id="toast-level">LEVEL 1</div>
+    <div class="lnt-name" id="toast-name">The Sunny Garden</div>
+  </div>
+
+  <div id="sting-flash"></div>
+  <button id="pause-btn" class="hidden">⏸</button>
+</div>
+
+<script>
+// ============================================================
+// GAME ENGINE
+// ============================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const wrapper = document.getElementById('game-wrapper');
+
+let W, H, DPR;
+function resize() {
+  DPR = window.devicePixelRatio || 1;
+  W = wrapper.clientWidth;
+  H = wrapper.clientHeight;
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(DPR, DPR);
+}
+window.addEventListener('resize', () => { resize(); if (gameState === 'playing') buildLevel(); });
+resize();
+
+// ============================================================
+// LEVEL CONFIGS
+// ============================================================
+const LEVELS = [
+  {
+    id: 1,
+    name: "The Sunny Garden",
+    emoji: "☀️",
+    completeEmoji: "🌻",
+    bgTop: '#87CEEB', bgBottom: '#c8f5a0',
+    groundColor: '#6dbf4f',
+    grassColor: '#5aad3f',
+    items: [
+      {type:'sunflower', count:4}, {type:'strawberry', count:4}
+    ],
+    bees: 2,
+    beeSpeed: 0.7,
+    beePattern: 'linear',
+    cloudCount: 4,
+    floorDeco: 'flowers'
+  },
+  {
+    id: 2,
+    name: "The Apple Orchard",
+    emoji: "🍎",
+    completeEmoji: "🍏",
+    bgTop: '#b3e5fc', bgBottom: '#d4f5b0',
+    groundColor: '#7cba5a',
+    grassColor: '#6aaa48',
+    items: [
+      {type:'apple', count:5}, {type:'rose', count:3}
+    ],
+    bees: 3,
+    beeSpeed: 1.0,
+    beePattern: 'patrol',
+    cloudCount: 3,
+    floorDeco: 'apples',
+    hasTrees: true
+  },
+  {
+    id: 3,
+    name: "The Rainy Garden",
+    emoji: "🌧️",
+    completeEmoji: "🌈",
+    bgTop: '#78909c', bgBottom: '#b0bec5',
+    groundColor: '#5d8a4e',
+    grassColor: '#4e7a40',
+    items: [
+      {type:'tulip', count:4}, {type:'blueberry', count:4}
+    ],
+    bees: 3,
+    beeSpeed: 1.1,
+    beePattern: 'random',
+    cloudCount: 6,
+    floorDeco: 'mushrooms',
+    isRainy: true
+  },
+  {
+    id: 4,
+    name: "The Nighttime Garden",
+    emoji: "🌙",
+    completeEmoji: "⭐",
+    bgTop: '#0d1b4b', bgBottom: '#1a3a6e',
+    groundColor: '#1a4a2e',
+    grassColor: '#123820',
+    items: [
+      {type:'moonflower', count:4}, {type:'grapes', count:4}
+    ],
+    bees: 4,
+    beeSpeed: 1.2,
+    beePattern: 'zigzag',
+    cloudCount: 0,
+    floorDeco: 'stars',
+    isNight: true,
+    starCount: 40
+  },
+  {
+    id: 5,
+    name: "The Big Beehive!",
+    emoji: "🐝",
+    completeEmoji: "🏆",
+    bgTop: '#ff8c00', bgBottom: '#ffe066',
+    groundColor: '#8b6914',
+    grassColor: '#7a5c10',
+    items: [
+      {type:'sunflower', count:3}, {type:'strawberry', count:2}, {type:'apple', count:2}, {type:'rose', count:2}
+    ],
+    bees: 6,
+    beeSpeed: 1.5,
+    beePattern: 'swirl',
+    cloudCount: 2,
+    floorDeco: 'honeycomb',
+    hasHive: true
+  }
+];
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let gameState = 'start'; // start | playing | paused | levelcomplete | gameover | win
+let currentLevel = 0;
+let score = 0;
+let lives = 3;
+let invincible = false;
+let invTimer = 0;
+const INV_TIME = 1800; // ms
+
+let player = { x:0, y:0, w:44, h:44, tx:0, ty:0, speed:3.2, frame:0, frameTimer:0 };
+let items = [];
+let bees = [];
+let particles = [];
+let rainDrops = [];
+let stars = [];
+let clouds = [];
+let bgDeco = [];
+let hive = null;
+let collected = 0;
+let totalItems = 0;
+let animFrame;
+let lastTime = 0;
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function showScreen(id) {
+  ['start-screen','level-complete-screen','game-over-screen','win-screen','pause-screen'].forEach(s => hide(s));
+  if(id) show(id);
+}
+
+function updateHUD() {
+  document.getElementById('level-badge').textContent = `LEVEL ${currentLevel+1}`;
+  document.getElementById('score-display').textContent = `⭐ ${score}`;
+  const hearts = document.querySelectorAll('.life-heart');
+  hearts.forEach((h,i) => { h.style.opacity = i < lives ? '1' : '0.2'; });
+  // collect bar
+  const bar = document.getElementById('collect-bar');
+  bar.innerHTML = '';
+  for(let i=0; i<totalItems; i++){
+    const d = document.createElement('div');
+    d.className = 'collect-dot' + (i < collected ? ' filled' : '');
+    bar.appendChild(d);
+  }
+}
+
+function showToast(level, name) {
+  const t = document.getElementById('level-name-toast');
+  document.getElementById('toast-level').textContent = `LEVEL ${level}`;
+  document.getElementById('toast-name').textContent = name;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function stingFlash() {
+  const f = document.getElementById('sting-flash');
+  f.classList.add('show');
+  setTimeout(() => f.classList.remove('show'), 180);
+}
+
+// ============================================================
+// LEVEL BUILDER
+// ============================================================
+const GROUND_H = () => Math.round(H * 0.18);
+
+function buildLevel() {
+  const lvl = LEVELS[currentLevel];
+  const gh = GROUND_H();
+
+  player.x = W * 0.5;
+  player.y = H - gh - player.h/2 - 10;
+  player.tx = player.x;
+  player.ty = player.y;
+
+  items = [];
+  bees = [];
+  particles = [];
+  bgDeco = [];
+  clouds = [];
+  stars = [];
+  rainDrops = [];
+  hive = null;
+  collected = 0;
+
+  // Count total items
+  totalItems = lvl.items.reduce((s,g) => s+g.count, 0);
+
+  // Place items
+  const margin = 50;
+  const topBound = H * 0.12;
+  const botBound = H - gh - 30;
+
+  lvl.items.forEach(group => {
+    for(let i=0; i<group.count; i++){
+      let placed = false, tries = 0;
+      while(!placed && tries < 50){
+        const x = margin + Math.random()*(W - margin*2);
+        const y = topBound + Math.random()*(botBound - topBound);
+        const overlap = items.some(it => dist(it.x,it.y,x,y) < 60);
+        if(!overlap){ items.push({type:group.type, x, y, collected:false, bob:Math.random()*Math.PI*2, scale:1, alpha:1}); placed=true; }
+        tries++;
+      }
+    }
+  });
+
+  // Place bees
+  const beeColors = ['#FFD700','#FFC200','#FFAA00','#FF9500','#FFB800','#FFCC44'];
+  for(let i=0; i<lvl.bees; i++){
+    const side = Math.random() < 0.5;
+    const b = {
+      x: side ? -30 : W+30,
+      y: (H*0.1) + Math.random()*(H*0.65),
+      vx: (side ? 1 : -1) * lvl.beeSpeed * (0.8+Math.random()*0.4),
+      vy: (Math.random()-0.5) * lvl.beeSpeed,
+      pattern: lvl.beePattern,
+      t: Math.random()*100,
+      baseX: 0, baseY: 0,
+      r: 18,
+      wingAngle: 0,
+      color: beeColors[i % beeColors.length],
+      angry: false
+    };
+    b.baseX = b.x; b.baseY = b.y;
+    bees.push(b);
+  }
+
+  // Clouds
+  for(let i=0; i<lvl.cloudCount; i++){
+    clouds.push({x: Math.random()*W, y: 30+Math.random()*(H*0.22), s: 0.7+Math.random()*0.8, vx: 0.15+Math.random()*0.2});
+  }
+
+  // Stars (night)
+  if(lvl.isNight || lvl.starCount){
+    const n = lvl.starCount || 35;
+    for(let i=0; i<n; i++){
+      stars.push({x:Math.random()*W, y:Math.random()*(H*0.6), r:0.8+Math.random()*2, t:Math.random()*Math.PI*2});
+    }
+  }
+
+  // Rain
+  if(lvl.isRainy){
+    for(let i=0; i<80; i++){
+      rainDrops.push({x:Math.random()*W, y:Math.random()*H, vy:6+Math.random()*4, len:8+Math.random()*12});
+    }
+  }
+
+  // Hive
+  if(lvl.hasHive){
+    hive = {x: W/2, y: H - gh - 90, r: 52};
+  }
+
+  // Trees (level 2)
+  if(lvl.hasTrees){
+    bgDeco = [{type:'tree',x:W*0.18,y:H-gh},{type:'tree',x:W*0.72,y:H-gh},{type:'tree',x:W*0.45,y:H-gh}];
+  }
+
+  updateHUD();
+}
+
+// ============================================================
+// ENTITY DRAWING
+// ============================================================
+const ITEM_EMOJIS = {
+  sunflower:'🌻', strawberry:'🍓', apple:'🍎', rose:'🌹',
+  tulip:'🌷', blueberry:'🫐', moonflower:'🌸', grapes:'🍇'
+};
+const ITEM_SIZE = 32;
+
+function drawEmoji(emoji, x, y, size, alpha=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `${size}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, x, y);
+  ctx.restore();
+}
+
+function drawPlayer(x, y, frame, inv) {
+  ctx.save();
+  if(inv && Math.floor(Date.now()/80)%2===0){ ctx.restore(); return; }
+  // Shadow
+  ctx.beginPath();
+  ctx.ellipse(x, y+22, 14, 5, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.fill();
+  // Body
+  const bob = Math.sin(frame*0.3)*2;
+  // Draw as simple cute character
+  drawEmoji('🧒', x, y + bob, 44);
+  ctx.restore();
+}
+
+function drawBee(b) {
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  // Wing flap
+  ctx.save();
+  ctx.rotate(Math.sin(b.wingAngle)*0.5);
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.ellipse(-7, -8, 10, 6, -0.5, 0, Math.PI*2);
+  ctx.fillStyle = '#e0f7ff';
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.scale(-1,1);
+  ctx.rotate(Math.sin(b.wingAngle)*0.5);
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.ellipse(-7, -8, 10, 6, -0.5, 0, Math.PI*2);
+  ctx.fillStyle = '#e0f7ff';
+  ctx.fill();
+  ctx.restore();
+  // Body
+  ctx.globalAlpha = 1;
+  drawEmoji(b.angry ? '😡' : '🐝', 0, 0, 32);
+  ctx.restore();
+}
+
+function drawCloud(c) {
+  ctx.save();
+  ctx.globalAlpha = 0.82;
+  ctx.fillStyle = '#fff';
+  const s = c.s;
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, 22*s, 0, Math.PI*2);
+  ctx.arc(c.x+28*s, c.y+6*s, 18*s, 0, Math.PI*2);
+  ctx.arc(c.x-20*s, c.y+8*s, 16*s, 0, Math.PI*2);
+  ctx.arc(c.x+8*s, c.y-10*s, 16*s, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawTree(x, y) {
+  // Trunk
+  ctx.fillStyle = '#8B5E3C';
+  ctx.fillRect(x-10, y-60, 20, 65);
+  // Canopy
+  ctx.fillStyle = '#3d9e3d';
+  ctx.beginPath();
+  ctx.arc(x, y-90, 42, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#4dbf4d';
+  ctx.beginPath();
+  ctx.arc(x-18, y-75, 30, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x+18, y-80, 32, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawHive(h) {
+  ctx.save();
+  // Hive body
+  const grad = ctx.createRadialGradient(h.x-10, h.y-15, 8, h.x, h.y, h.r);
+  grad.addColorStop(0, '#ffe87c');
+  grad.addColorStop(1, '#e0900a');
+  ctx.beginPath();
+  ctx.ellipse(h.x, h.y, h.r, h.r*1.2, 0, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Stripes
+  for(let i=-3; i<4; i++){
+    ctx.beginPath();
+    ctx.ellipse(h.x, h.y+i*14, h.r*0.9, 4, 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+  }
+  // Entrance
+  ctx.beginPath();
+  ctx.ellipse(h.x, h.y+h.r*0.75, 12, 7, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fill();
+  // Emoji on top
+  drawEmoji('🐝', h.x, h.y - h.r*0.5, 28);
+  ctx.restore();
+}
+
+function drawParticle(p) {
+  ctx.save();
+  ctx.globalAlpha = p.alpha;
+  drawEmoji(p.emoji, p.x, p.y, p.size);
+  ctx.restore();
+}
+
+function drawGround(lvl, gh) {
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0,0,0,H-gh);
+  skyGrad.addColorStop(0, lvl.bgTop);
+  skyGrad.addColorStop(1, lvl.bgBottom);
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0,0,W,H-gh);
+
+  // Ground
+  ctx.fillStyle = lvl.groundColor;
+  ctx.fillRect(0, H-gh, W, gh);
+
+  // Grass strip
+  ctx.fillStyle = lvl.grassColor;
+  ctx.fillRect(0, H-gh, W, 18);
+
+  // Grass tufts
+  ctx.fillStyle = lvl.grassColor;
+  for(let i=0; i<W; i+=22){
+    const h2 = 10+Math.sin(i*0.3)*4;
+    ctx.beginPath();
+    ctx.moveTo(i, H-gh+4);
+    ctx.quadraticCurveTo(i+5, H-gh-h2, i+10, H-gh+4);
+    ctx.fill();
+  }
+}
+
+// ============================================================
+// PARTICLE SYSTEM
+// ============================================================
+function spawnCollectParticles(x, y, type) {
+  const emojis = ['✨','⭐','💛','🌟'];
+  for(let i=0; i<5; i++){
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5)*4,
+      vy: -1.5 - Math.random()*3,
+      emoji: emojis[Math.floor(Math.random()*emojis.length)],
+      size: 18+Math.random()*12,
+      alpha: 1,
+      life: 1
+    });
+  }
+  // Also the item emoji
+  particles.push({x,y,vx:0,vy:-2,emoji:ITEM_EMOJIS[type],size:30,alpha:1,life:1.2});
+}
+
+function spawnStingParticles(x, y) {
+  for(let i=0; i<4; i++){
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5)*5,
+      vy: -1 - Math.random()*2,
+      emoji: '💥',
+      size: 22,
+      alpha: 1,
+      life: 0.7
+    });
+  }
+}
+
+// ============================================================
+// BEE MOVEMENT
+// ============================================================
+function updateBee(b, dt) {
+  b.t += dt * 0.001;
+  b.wingAngle += dt * 0.02;
+
+  const lvl = LEVELS[currentLevel];
+  const s = b.vx > 0 ? 1 : -1;
+
+  switch(b.pattern){
+    case 'linear':
+      b.x += b.vx * (dt/16);
+      if(b.x < -40) b.x = W+40;
+      if(b.x > W+40) b.x = -40;
+      b.y += Math.sin(b.t*2)*0.4;
+      break;
+    case 'patrol':
+      b.x += b.vx * (dt/16);
+      if(b.x > W-30 || b.x < 30){ b.vx *= -1; b.y += 30; }
+      b.y = Math.max(50, Math.min(H*0.75, b.y));
+      break;
+    case 'random':
+      b.x += b.vx * (dt/16);
+      b.y += b.vy * (dt/16);
+      if(b.x < 10 || b.x > W-10) b.vx *= -1;
+      if(b.y < 40 || b.y > H*0.8) b.vy *= -1;
+      if(Math.random()<0.008){ b.vx += (Math.random()-0.5)*0.8; b.vy += (Math.random()-0.5)*0.8; }
+      b.vx = Math.max(-lvl.beeSpeed*1.5, Math.min(lvl.beeSpeed*1.5, b.vx));
+      b.vy = Math.max(-lvl.beeSpeed*1.5, Math.min(lvl.beeSpeed*1.5, b.vy));
+      break;
+    case 'zigzag':
+      b.x += b.vx * (dt/16);
+      b.y = b.baseY + Math.sin(b.t * 3) * 60;
+      if(b.x < -40) { b.x = W+40; b.baseY = H*0.1+Math.random()*H*0.65; }
+      if(b.x > W+40) { b.x = -40; b.baseY = H*0.1+Math.random()*H*0.65; }
+      break;
+    case 'swirl':
+      b.t += 0.001 * dt;
+      b.x = W/2 + Math.cos(b.t*(0.8+b.r*0.01)) * (80 + b.r*4);
+      b.y = (H*0.45) + Math.sin(b.t*(0.8+b.r*0.01)) * (60 + b.r*3);
+      break;
+  }
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function dist(x1,y1,x2,y2){ return Math.sqrt((x1-x2)**2+(y1-y2)**2); }
+
+function gameLoop(ts) {
+  if(gameState !== 'playing'){ animFrame = requestAnimationFrame(gameLoop); return; }
+  const dt = Math.min(ts - lastTime, 50);
+  lastTime = ts;
+  const lvl = LEVELS[currentLevel];
+  const gh = GROUND_H();
+
+  // Move player toward target
+  const dx = player.tx - player.x;
+  const dy = player.ty - player.y;
+  const d = Math.sqrt(dx*dx+dy*dy);
+  if(d > 2){
+    player.x += (dx/d)*Math.min(player.speed*(dt/16), d);
+    player.y += (dy/d)*Math.min(player.speed*(dt/16), d);
+  }
+  // Clamp player
+  player.x = Math.max(player.w/2, Math.min(W-player.w/2, player.x));
+  player.y = Math.max(player.h/2, Math.min(H-gh-player.h/2-5, player.y));
+
+  // Animate player
+  player.frameTimer += dt;
+  if(player.frameTimer > 200){ player.frame++; player.frameTimer=0; }
+
+  // Invincibility
+  if(invincible){ invTimer -= dt; if(invTimer<=0){ invincible=false; } }
+
+  // Update bees
+  bees.forEach(b => updateBee(b, dt));
+
+  // Check bee collision
+  if(!invincible){
+    bees.forEach(b => {
+      if(dist(player.x,player.y,b.x,b.y) < 26){
+        lives--;
+        invincible = true;
+        invTimer = INV_TIME;
+        stingFlash();
+        b.angry = true;
+        setTimeout(()=>b.angry=false, 600);
+        spawnStingParticles(player.x, player.y);
+        updateHUD();
+        if(lives <= 0){
+          gameState = 'gameover';
+          setTimeout(()=>showScreen('game-over-screen'), 300);
+        }
+      }
+    });
+  }
+
+  // Check item collection
+  items.forEach(it => {
+    if(!it.collected && dist(player.x,player.y,it.x,it.y) < 30){
+      it.collected = true;
+      collected++;
+      score += 10;
+      spawnCollectParticles(it.x, it.y, it.type);
+      updateHUD();
+      if(collected >= totalItems){
+        gameState = 'levelcomplete';
+        setTimeout(showLevelComplete, 400);
+      }
+    }
+  });
+
+  // Rain
+  if(lvl.isRainy){
+    rainDrops.forEach(r => {
+      r.y += r.vy*(dt/16);
+      if(r.y > H){ r.y = -r.len; r.x = Math.random()*W; }
+    });
+  }
+
+  // Clouds
+  clouds.forEach(c => {
+    c.x += c.vx*(dt/16);
+    if(c.x > W+80) c.x = -80;
+  });
+
+  // Stars twinkle
+  stars.forEach(s => s.t += dt*0.003);
+
+  // Particles
+  particles.forEach(p => {
+    p.x += p.vx*(dt/16);
+    p.y += p.vy*(dt/16);
+    p.vy += 0.08*(dt/16);
+    p.life -= dt*0.001;
+    p.alpha = Math.max(0, p.life);
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  // Draw
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  drawGround(lvl, gh);
+
+  // Stars
+  if(lvl.isNight){
+    stars.forEach(s => {
+      ctx.save();
+      ctx.globalAlpha = 0.5+Math.sin(s.t)*0.5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = '#fffde0';
+      ctx.fill();
+      ctx.restore();
+    });
+    // Moon
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(W*0.8, H*0.1, 28, 0, Math.PI*2);
+    const mg = ctx.createRadialGradient(W*0.8-5, H*0.1-5, 4, W*0.8, H*0.1, 28);
+    mg.addColorStop(0, '#fffde0');
+    mg.addColorStop(1, '#f0d060');
+    ctx.fillStyle = mg;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Clouds
+  clouds.forEach(drawCloud);
+
+  // Rain
+  if(lvl.isRainy){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150,200,255,0.5)';
+    ctx.lineWidth = 1.5;
+    rainDrops.forEach(r => {
+      ctx.beginPath();
+      ctx.moveTo(r.x, r.y);
+      ctx.lineTo(r.x-2, r.y+r.len);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  // Trees / BG deco
+  bgDeco.forEach(d => {
+    if(d.type === 'tree') drawTree(d.x, d.y);
+  });
+
+  // Hive
+  if(hive) drawHive(hive);
+
+  // Items (with bob animation)
+  items.forEach(it => {
+    if(it.collected) return;
+    it.bob += dt*0.004;
+    const bobY = Math.sin(it.bob)*4;
+    const glow = lvl.isNight;
+    if(glow){
+      ctx.save();
+      ctx.shadowColor = '#ffe0ff';
+      ctx.shadowBlur = 14;
+    }
+    drawEmoji(ITEM_EMOJIS[it.type], it.x, it.y+bobY, ITEM_SIZE+4);
+    if(glow) ctx.restore();
+    // Small shimmer ring on night
+    if(lvl.isNight){
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,230,255,${0.3+Math.sin(it.bob)*0.2})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(it.x, it.y+bobY, 22, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // Bees
+  bees.forEach(drawBee);
+
+  // Player
+  drawPlayer(player.x, player.y, player.frame, invincible);
+
+  // Particles
+  particles.forEach(drawParticle);
+
+  // Level 5 honeycomb overlay on ground
+  if(lvl.floorDeco === 'honeycomb'){
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    for(let i=0; i<W; i+=32){
+      drawEmoji('🍯', i, H-gh/2, 24);
+    }
+    ctx.restore();
+  }
+
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+function handleInput(cx, cy) {
+  if(gameState !== 'playing') return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  player.tx = (cx - rect.left) * scaleX;
+  player.ty = (cy - rect.top) * scaleY;
+}
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; handleInput(t.clientX,t.clientY); }, {passive:false});
+canvas.addEventListener('touchmove', e => { e.preventDefault(); const t=e.touches[0]; handleInput(t.clientX,t.clientY); }, {passive:false});
+canvas.addEventListener('mousedown', e => handleInput(e.clientX,e.clientY));
+canvas.addEventListener('mousemove', e => { if(e.buttons) handleInput(e.clientX,e.clientY); });
+
+// ============================================================
+// FLOW
+// ============================================================
+function startGame() {
+  currentLevel = 0;
+  score = 0;
+  lives = 3;
+  showScreen(null);
+  hide('start-screen');
+  show('hud'); show('collect-bar'); show('pause-btn');
+  startLevel();
+}
+
+function startLevel() {
+  gameState = 'playing';
+  invincible = false;
+  buildLevel();
+  updateHUD();
+  const lvl = LEVELS[currentLevel];
+  showToast(currentLevel+1, lvl.name);
+  lastTime = performance.now();
+}
+
+function showLevelComplete() {
+  const lvl = LEVELS[currentLevel];
+  document.getElementById('lc-emoji').textContent = lvl.completeEmoji;
+  document.getElementById('lc-sub').textContent = `Level ${currentLevel+1} done! +${totalItems*10} pts`;
+  const nextBtn = document.getElementById('next-level-btn');
+  if(currentLevel >= LEVELS.length-1){
+    nextBtn.textContent = '🏆 Finish!';
+  } else {
+    nextBtn.textContent = 'Next Level ➡️';
+  }
+  showScreen('level-complete-screen');
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('next-level-btn').addEventListener('click', () => {
+  currentLevel++;
+  if(currentLevel >= LEVELS.length){
+    // Win
+    document.getElementById('win-sub').textContent = `Total score: ⭐ ${score}\nRiley is a garden superstar! 🌟`;
+    showScreen('win-screen');
+  } else {
+    showScreen(null);
+    startLevel();
+  }
+});
+document.getElementById('retry-btn').addEventListener('click', () => {
+  lives = 3;
+  showScreen(null);
+  startLevel();
+});
+document.getElementById('go-home-btn').addEventListener('click', goHome);
+document.getElementById('play-again-btn').addEventListener('click', startGame);
+document.getElementById('pause-btn').addEventListener('click', () => {
+  if(gameState === 'playing'){ gameState='paused'; showScreen('pause-screen'); }
+});
+document.getElementById('resume-btn').addEventListener('click', () => {
+  showScreen(null);
+  lastTime = performance.now();
+  gameState='playing';
+});
+document.getElementById('pause-home-btn').addEventListener('click', goHome);
+
+function goHome() {
+  gameState = 'start';
+  hide('hud'); hide('collect-bar'); hide('pause-btn');
+  showScreen('start-screen');
+  ctx.clearRect(0,0,W,H);
+}
+
+// Start loop
+animFrame = requestAnimationFrame(gameLoop);
+
+// Register service worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/riley/sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
