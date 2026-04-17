@@ -128,6 +128,8 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
   </div>
   <div id="canvasWrap">
     <canvas id="c"></canvas>
+    <!-- Full-screen tap target for title screen — real HTML button, works on all iOS -->
+    <div id="tapOverlay" onclick="tapToPlay()" ontouchstart="tapToPlay()" style="position:absolute;inset:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:transparent;z-index:10;display:block;"></div>
     <!-- Mobile initials input overlay -->
     <div id="initOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:10px;">
       <div id="initTitle" style="color:#FFD700;font-size:22px;font-weight:900;">GAME OVER</div>
@@ -581,6 +583,7 @@ function initGame(){
   UI.sc.textContent="0";UI.lv.textContent="5";UI.lel.textContent="1";UI.pwr.textContent="1";
   UI.pf.style.width="0%";UI.bw.style.display="none";UI.tf.style.width="0%";
   UI.btnS.style.display="none";UI.btnR.style.display="none";
+  const _tapOv=document.getElementById("tapOverlay");if(_tapOv)_tapOv.style.display="none";
   if(UI.btnP)UI.btnP.style.display="";
   if(UI.btnNew)UI.btnNew.style.display="none";
   
@@ -590,7 +593,17 @@ function initGame(){
   startBg();
 }
 
-function startGame(){tryVoice();initGame();ST="playing";setTimeout(()=>speak("Dodge the flying vegetables!",0.5,0.75),5200);}
+function tapToPlay(){
+  // Hide the overlay once game starts — only needed on title
+  const ov=document.getElementById('tapOverlay');
+  if(ov)ov.style.display='none';
+  startGame();
+}
+function showTapOverlay(){
+  const ov=document.getElementById('tapOverlay');
+  if(ov)ov.style.display='block';
+}
+function startGame(){if(ST==="playing")return;tryVoice();initGame();ST="playing";setTimeout(()=>speak("Dodge the flying vegetables!",0.5,0.75),5200);}
 
 // ── boss attacks ─────────────────────────────────────────────────────────
 function bossShoot(spd,spread){
@@ -727,7 +740,7 @@ function update(now){
   if(!G.bActive&&!G.bBeaten){
     G.lElapsed=now-G.lStart;
     const s=Math.floor(G.lElapsed/1000);
-    UI.tim.textContent=Math.floor(s/60)+":"+(s%60<10?"0":"")+s%60;
+    const sLeft=Math.max(0,Math.ceil((G.LDUR-G.lElapsed)/1000));UI.tim.textContent=Math.floor(sLeft/60)+":"+(sLeft%60<10?"0":"")+sLeft%60;
     UI.tf.style.width=Math.min(100,G.lElapsed/G.LDUR*100)+"%";
     if(G.lElapsed>=G.LDUR)spawnBoss();
     if(G.lElapsed>=G.LDUR-10000&&G.lElapsed<G.LDUR-9800&&!G.bossWarned){G.bossWarned=true;setMsg("BOSS INCOMING IN 10 SECONDS!!",3000);notify("BOSS INCOMING in 10 seconds!","💀","#ff44ff",3.5);}
@@ -1583,7 +1596,7 @@ document.addEventListener("keydown",e=>{
   if(ST==="initials"){
     if(e.key.length===1&&e.key.match(/[a-zA-Z]/)&&initStr.length<3)initStr+=e.key.toUpperCase();
     if(e.code==="Backspace")initStr=initStr.slice(0,-1);
-    if(e.code==="Enter"){leaderboard.push({initials:initStr||"???",score:G.score,level:G.level,won:initWon});leaderboard.sort((a,b)=>b.score-a.score);leaderboard=leaderboard.slice(0,10);ST="title";UI.btnS.style.display="";UI.btnR.style.display="none";}
+    if(e.code==="Enter"){leaderboard.push({initials:initStr||"???",score:G.score,level:G.level,won:initWon});leaderboard.sort((a,b)=>b.score-a.score);leaderboard=leaderboard.slice(0,10);ST="title";UI.btnS.style.display="";UI.btnR.style.display="none";showTapOverlay();}
     return;
   }
   if(e.code==="Enter"&&(ST==="title"||ST==="gameover"))startGame();
@@ -1610,15 +1623,13 @@ function _getTouchCanvas(touch){
 
 CV.addEventListener("touchstart",e=>{
   e.preventDefault();
-  tryVoice();
-  for(const t of e.changedTouches){
-    if(_tid===null){
-      _tid=t.identifier;
-      const p=_getTouchCanvas(t);
-      if(ST==="title"){startGame();return;}
-      if(ST==="playing"&&!paused){
-        _joyBase={x:p.x,y:p.y};_joyCur={x:p.x,y:p.y};_joyActive=true;
-      }
+  // Joystick — only during gameplay
+  if(ST==="playing"&&!paused){
+    const firstTouch=e.changedTouches[0];
+    if(_tid===null&&firstTouch){
+      _tid=firstTouch.identifier;
+      const p=_getTouchCanvas(firstTouch);
+      _joyBase={x:p.x,y:p.y};_joyCur={x:p.x,y:p.y};_joyActive=true;
     }
   }
 },{passive:false});
