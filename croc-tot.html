@@ -138,7 +138,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px;border:2px solid 
     </div>
   </div>
   <div id="btnRow">
-    <button class="btn" id="btnS" style="display:none">&#9654; Start</button>
+    <button class="btn" id="btnS" style="display:none;visibility:hidden;width:0;padding:0;margin:0;border:0;overflow:hidden;">Start</button>
     <button class="btn" id="btnR" style="display:none">&#8635; Play Again</button>
     <button class="btn" id="btnP" style="display:none;background:#334;border:1px solid #556">&#9646;&#9646; Pause (P)</button>
     <button class="btn" id="btnNew" style="display:none;background:#442211;border:1px solid #884422">&#8617; Start Over</button>
@@ -383,7 +383,7 @@ const PWUPS=[
 
 // ── game state ────────────────────────────────────────────────────────────
 function resetG(){
-  G={score:0,lives:5,level:1,lStart:0,lElapsed:0,LDUR:90000,lastTime:0,
+  G={score:0,lives:5,level:1,lStart:0,lElapsed:0,LDUR:60000,lastTime:0,
     tot:{x:80,y:H/2,w:36,h:30,vx:0,vy:0,dir:1,inv:0,wf:0},
     enemies:[],items:[],pwups:[],shots:[],fries:[],parts:[],pops:[],clouds:[],bgd:[],
     upg:{shield:false,magnet:false,baby:false,bigShot:false,freeze:false,ghost:false,dbl:false,bomb:false,missile:false,laser:false},
@@ -730,7 +730,7 @@ function update(now){
     UI.tim.textContent=Math.floor(s/60)+":"+(s%60<10?"0":"")+s%60;
     UI.tf.style.width=Math.min(100,G.lElapsed/G.LDUR*100)+"%";
     if(G.lElapsed>=G.LDUR)spawnBoss();
-    if(G.lElapsed>=G.LDUR-15000&&G.lElapsed<G.LDUR-14800&&!G.bossWarned){G.bossWarned=true;setMsg("BOSS INCOMING IN 15 SECONDS!!",3000);notify("BOSS INCOMING in 15 seconds!","💀","#ff44ff",3.5);}
+    if(G.lElapsed>=G.LDUR-10000&&G.lElapsed<G.LDUR-9800&&!G.bossWarned){G.bossWarned=true;setMsg("BOSS INCOMING IN 10 SECONDS!!",3000);notify("BOSS INCOMING in 10 seconds!","💀","#ff44ff",3.5);}
   }
 
   // level events
@@ -1660,7 +1660,7 @@ if(UI.btnNew)UI.btnNew.addEventListener("click",()=>{
   paused=false;if(UI.btnNew)UI.btnNew.style.display='none';
   startGame();
 });
-setTimeout(()=>{UI.btnS.style.display="";},200);
+// btnS hidden on mobile — canvas TAP TO PLAY used instead
 if(window.speechSynthesis){speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();speechSynthesis.getVoices();}
 // Show "Add to Home Screen" hint on mobile after 3s if not installed
 if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)&&!window.navigator.standalone){
