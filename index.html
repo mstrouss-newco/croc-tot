@@ -1512,7 +1512,7 @@ function drawTitle(){
   CX.shadowColor="#ffee00";CX.shadowBlur=14;CX.fillStyle="#ffe266";
   CX.fillText("Made by Jackson",px+pr+8,py);
   CX.shadowBlur=0;CX.globalAlpha=1;CX.restore();
-  if(leaderboard.length>0){CX.fillStyle="rgba(0,0,0,0.55)";CX.beginPath();CX.roundRect(W/2-130,H/2+52,260,90,10);CX.fill();CX.fillStyle="#FFD700";CX.font="bold 12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("HIGH SCORES",W/2,H/2+68);leaderboard.slice(0,4).forEach((e,i)=>{CX.fillStyle=i===0?"#FFD700":"rgba(255,255,255,0.75)";CX.font="11px Arial";CX.fillText((i+1)+". "+e.initials+"  "+e.score+"  Lv"+e.level,W/2,H/2+84+i*14);});}else{CX.fillStyle="rgba(0,0,0,0.5)";CX.beginPath();CX.roundRect(W/2-140,H/2+55,280,55,10);CX.fill();CX.fillStyle="rgba(255,255,255,0.55)";CX.font="12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("Press Enter or click Start",W/2,H/2+82);}
+  if(leaderboard.length>0){CX.fillStyle="rgba(0,0,0,0.55)";CX.beginPath();CX.roundRect(W/2-130,H/2+52,260,90,10);CX.fill();CX.fillStyle="#FFD700";CX.font="bold 12px Arial";CX.textAlign="center";CX.textBaseline="middle";CX.fillText("HIGH SCORES",W/2,H/2+68);leaderboard.slice(0,4).forEach((e,i)=>{CX.fillStyle=i===0?"#FFD700":"rgba(255,255,255,0.75)";CX.font="11px Arial";CX.fillText((i+1)+". "+e.initials+"  "+e.score+"  Lv"+e.level,W/2,H/2+84+i*14);});}else{CX.fillStyle="rgba(0,0,0,0.5)";CX.beginPath();CX.roundRect(W/2-140,H/2+55,280,55,10);CX.fill();CX.fillStyle="rgba(255,255,255,0.55)";CX.font="12px Arial";CX.textAlign="center";CX.textBaseline="middle";}  // start hint removed — TAP TO PLAY button used instead
   // Big tap-to-start button on canvas — always visible on mobile
   {
     const bw2=200,bh2=52,bx2=W/2-bw2/2,by2=H/2+82;
