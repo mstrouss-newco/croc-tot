@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+if(lvTimer>=lvMinDur&&!_timesUpHinted){_timesUpHinted=true;const _rem=bees.filter(b=>!b._dead).length+snakes.filter(s=>!s._dead).length;if(_rem>0)pop(W/2,H*.28,'🐝 Clear '+_rem+' left to win!','#ffe066');}
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -514,6 +515,7 @@ function hitBossWep(dmg){
 
 // ── Game state ────────────────────────────────────────────────
 let GS='start',LI=0,score=0,hiscore=0,lives=3,inv=false,invT=0;
+let _timesUpHinted=false;
 let combo=0,comboT=0,collected=0,total=0,fruitGot=0;
 let farmerOn=false,farmerT=0;
 const FNEED=5,FDUR=13000,FR=110;
@@ -593,7 +595,7 @@ function buildLv(){
   PL.x=80;PL.y=H-gh-PL.h/2-12;PL.tx=PL.x;PL.ty=PL.y;
   items=[];bees=[];snakes=[];parts=[];pops=[];rainD=[];stars=[];clouds=[];stompWaves=[];
   shots=[];wepCd=0;boss=null;collected=0;fruitGot=0;farmerOn=false;farmerT=0;beeRespawnCount=0;beeRespawnTimer=0;
-  lvTimer=0;lvDur=lv.dur||45000;lvMinDur=lv.minDur||30000;waveTimer=lv.waveEvery||12000;waveCount=0;allItemsHintShown=false;
+  lvTimer=0;lvDur=lv.dur||45000;lvMinDur=lv.minDur||30000;waveTimer=lv.waveEvery||12000;waveCount=0;allItemsHintShown=false;_timesUpHinted=false;
   total=lv.items.reduce((s,g)=>s+g.n,0);
   const mg=50,top=H*.1,bot=H-gh-38;
   lv.items.forEach(g=>{
@@ -752,7 +754,7 @@ function loop(ts){
   if(timeLeft>0){
     waveTimer-=dt;
     const activeBees=bees.filter(b=>!b._dead).length;
-    if(waveTimer<=0||(activeBees===0&&timeLeft>3000&&waveTimer<=(lv2.waveEvery||10000)*0.25)){
+    if((waveTimer<=0||(activeBees===0&&timeLeft>3000&&waveTimer<=(lv2.waveEvery||10000)*0.25))&&activeBees<(lv2.bees*2)){
       waveTimer=lv2.waveEvery||10000;
       waveCount++;
       // Number of bees in wave scales with wave number
@@ -801,22 +803,6 @@ function loop(ts){
     }
   });
   checkWinCondition();
-  // respawn (level 2)
-  if(lv.beesRespawn&&items.length>0&&items.every(i=>i.col)&&collected<total*(lv.beesRespawn+1)){
-    const gh2=GH(),mg2=50,top2=H*.1,bot2=H-gh2-38;
-    lv.items.forEach(g=>{
-      for(let i=0;i<Math.ceil(g.n/2);i++){
-        let ok=false,tr=0;
-        while(!ok&&tr<30){
-          const x=mg2+Math.random()*(W-mg2*2),y=top2+Math.random()*(bot2-top2);
-          if(!items.some(it=>!it.col&&D(it.x,it.y,x,y)<48)){items.push({t:g.t,x,y,col:false,bob:Math.random()*Math.PI*2});ok=true;}
-          tr++;
-        }
-      }
-    });
-    total+=Math.ceil(lv.items.reduce((s,g)=>s+g.n,0)/2);
-    updHUD();
-  }
   // weather
   if(lv.rain)rainD.forEach(r=>{r.y+=r.vy*(dt/16);if(r.y>H){r.y=-10;r.x=Math.random()*W;}});
   clouds.forEach(c=>{c.x+=c.vx*(dt/16);if(c.x>W+80)c.x=-80;});
