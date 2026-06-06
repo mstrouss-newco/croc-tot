@@ -764,7 +764,7 @@ function loop(ts){
   });
   checkWinCondition();
   // respawn (level 2)
-  if(lv.respawn&&items.length>0&&items.every(i=>i.col)&&collected<total*(lv.respawn+1)){
+  if(lv.beesRespawn&&items.length>0&&items.every(i=>i.col)&&collected<total*(lv.beesRespawn+1)){
     const gh2=GH(),mg2=50,top2=H*.1,bot2=H-gh2-38;
     lv.items.forEach(g=>{
       for(let i=0;i<Math.ceil(g.n/2);i++){
