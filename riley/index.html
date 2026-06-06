@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-if(lvTimer>=lvMinDur&&!_timesUpHinted){_timesUpHinted=true;const _rem=bees.filter(b=>!b._dead).length+snakes.filter(s=>!s._dead).length;if(_rem>0)pop(W/2,H*.28,'🐝 Clear '+_rem+' left to win!','#ffe066');}
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -725,7 +725,8 @@ function loop(ts){
   // level timer
   lvTimer+=dt;
   // Timer bar shows progress toward minimum duration
-  if(lvTimer>=lvMinDur&&bees.filter(b=>!b._dead).length===0&&snakes.filter(s=>!s._dead).length===0&&(!boss||bossHp<=0)){
+  
+  if(lvTimer>=lvMinDur&&!_timesUpHinted){_timesUpHinted=true;const _rem=bees.filter(b=>!b._dead).length+snakes.filter(s=>!s._dead).length;if(_rem>0)pop(W/2,H*.28,'🐝 Clear '+_rem+' left to win!','#ffe066');}if(lvTimer>=lvMinDur&&bees.filter(b=>!b._dead).length===0&&snakes.filter(s=>!s._dead).length===0&&(!boss||bossHp<=0)){
     finishLevel();
   }
   // Hard cap: if taking way too long, nudge with time warning but no penalty
