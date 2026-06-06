@@ -311,7 +311,6 @@ function updWepBar(){
 }
 
 function autoShoot(dt){
-  if(GS!=='play'||muted&&false){}// always check
   wepCd=Math.max(0,wepCd-dt);
   if(wepCd>0)return;
   // gather targets
@@ -477,7 +476,7 @@ function hitBossWep(dmg){
 }
 
 // ── Game state ────────────────────────────────────────────────
-let GS='start',LI=0,score=0,lives=3,inv=false,invT=0;
+let GS='start',LI=0,score=0,hiscore=0,lives=3,inv=false,invT=0;
 let combo=0,comboT=0,collected=0,total=0,fruitGot=0;
 let farmerOn=false,farmerT=0;
 const FNEED=5,FDUR=13000,FR=110;
@@ -522,7 +521,12 @@ const GH=()=>Math.round(H*.17);
 
 // ── HUD ───────────────────────────────────────────────────────
 function updHUD(){
-  const livingBees=bees.filter(b=>!b._dead).length,livingSnakes=snakes.filter(s=>!s._dead).length,enemyTotal=livingBees+livingSnakes+(boss?1:0);$('lvlb').textContent='LEVEL '+(LI+1)+(GS==='play'?'  💀 '+enemyTotal:'');
+  const livingBees=bees.filter(b=>!b._dead).length,livingSnakes=snakes.filter(s=>!s._dead).length,enemyTotal=livingBees+livingSnakes+(boss?1:0);
+  let levelText='LEVEL '+(LI+1);
+  if(GS==='play'){
+    if(livingBees>0){levelText+='  🐝×'+livingBees;}else{levelText+='  ✅';}
+  }
+  $('lvlb').textContent=levelText;
   $('scrd').textContent='⭐ '+score;
   const livs=$('livd');livs.innerHTML='';
   for(let i=0;i<3;i++){const s=document.createElement('span');s.textContent='🍯';s.style.opacity=i<lives?'1':'0.2';livs.appendChild(s);}
@@ -530,7 +534,14 @@ function updHUD(){
   for(let i=0;i<total;i++){const d=document.createElement('div');d.className='cd'+(i<collected?' on':'');bar.appendChild(d);}
   const pct=Math.min(1,lvTimer/lvMinDur); // fills up as you survive
   $('timerfill').style.width=(pct*100)+'%';
-  $('timerfill').style.background=pct<.5?'linear-gradient(90deg,#ff4444,#ffaa00)':pct<.85?'linear-gradient(90deg,#ffaa00,#ffe066)':'linear-gradient(90deg,#4cde7a,#44ffaa)';
+  const timeLeft=lvMinDur-lvTimer;
+  if(timeLeft<8000&&timeLeft>0){
+    $('timerfill').style.background='linear-gradient(90deg,#ff4444,#ff8800)';
+    $('timerbar').style.height='10px';
+  }else{
+    $('timerfill').style.background=pct<.5?'linear-gradient(90deg,#ff4444,#ffaa00)':pct<.85?'linear-gradient(90deg,#ffaa00,#ffe066)':'linear-gradient(90deg,#4cde7a,#44ffaa)';
+    $('timerbar').style.height='';
+  }
   if(farmerOn){show('fbar');$('fbar').classList.add('on');$('flbl').textContent='🧲 Magnet!';$('fff').style.width=(farmerT/FDUR*100)+'%';}
   else{const p=Math.min(100,(fruitGot/FNEED)*100);if(p>0&&p<100){show('fbar');$('fbar').classList.add('on');$('flbl').textContent='🍎 Farmer?';$('fff').style.width=p+'%';}else $('fbar').classList.remove('on');}
   if(boss){show('bbar');$('bbar').classList.add('on');$('bbhp').style.width=(bossHp/bossMaxHp*100)+'%';}
@@ -545,7 +556,7 @@ function buildLv(){
   PL.x=80;PL.y=H-gh-PL.h/2-12;PL.tx=PL.x;PL.ty=PL.y;
   items=[];bees=[];snakes=[];parts=[];pops=[];rainD=[];stars=[];clouds=[];stompWaves=[];
   shots=[];wepCd=0;boss=null;collected=0;fruitGot=0;farmerOn=false;farmerT=0;beeRespawnCount=0;beeRespawnTimer=0;
-  lvTimer=0;lvDur=lv.dur||45000;lvMinDur=lv.minDur||30000;waveTimer=lv.waveEvery||12000;waveCount=0;
+  lvTimer=0;lvDur=lv.dur||45000;lvMinDur=lv.minDur||30000;waveTimer=lv.waveEvery||12000;waveCount=0;allItemsHintShown=false;
   total=lv.items.reduce((s,g)=>s+g.n,0);
   const mg=50,top=H*.1,bot=H-gh-38;
   lv.items.forEach(g=>{
@@ -607,10 +618,10 @@ function updateBoss(dt){
 function glitterBurst(x,y,c1,c2,n,big){
   const space=200-parts.length,cnt=Math.min(n||8,Math.max(0,space));
   for(let i=0;i<cnt;i++){
-    const a=rnd(0,Math.PI*2),s=rnd(big?90:50,big?200:140);
+    const a=rnd(-Math.PI*.9,-Math.PI*.1),s=rnd(big?40:22,big?90:60);
     const isGlit=Math.random()>.35;
     parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:big?1.5:.9,ml:big?1.5:.9,
-      col:Math.random()>.5?c1:c2,rad:rnd(isGlit?1.5:3,isGlit?4:8),glitter:isGlit,rot:Math.random()*Math.PI*2,spin:(Math.random()-.5)*14});
+      col:Math.random()>.5?c1:c2,rad:rnd(isGlit?1.5:3,isGlit?4:8),glitter:isGlit,rot:Math.random()*Math.PI*2,spin:(Math.random()-.5)*6});
   }
 }
 function splatBurst(x,y){
@@ -622,7 +633,7 @@ function splatBurst(x,y){
 }
 function burst(x,y,col,n,big){
   const space=200-parts.length,cnt=Math.min(n||6,Math.max(0,space));
-  for(let i=0;i<cnt;i++){const a=rnd(0,Math.PI*2),s=rnd(big?80:45,big?180:120);parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:big?1.4:.9,ml:big?1.4:.9,col,rad:rnd(big?4:2,big?9:5)});}
+  for(let i=0;i<cnt;i++){const a=rnd(-Math.PI*.85,-Math.PI*.15),s=rnd(big?35:20,big?80:50);parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:big?1.4:.9,ml:big?1.4:.9,col,rad:rnd(big?4:2,big?9:5)});}
 }
 function pop(x,y,txt,col){pops.push({x,y,t:txt,col,life:.9,vy:-90});}
 
@@ -657,7 +668,7 @@ function checkWinCondition(){
   const minDone=lvTimer>=lvMinDur;
   if(allBeesGone&&allSnakesGone&&bossGone&&minDone)finishLevel();
 }
-function finishLevel(){GS='lc';stopBuzz();stopMusic();setTimeout(()=>{sfx('lc');$('lcsub').textContent='Level '+(LI+1)+' done! +'+(total*10)+' pts';score+=total*10;showScr('lcs');},200);}
+function finishLevel(){GS='lc';stopBuzz();stopMusic();setTimeout(()=>{sfx('lc');const lvBonus=collected*10;$('lcsub').textContent='Level '+(LI+1)+' done! +'+lvBonus+' pts';score+=lvBonus;if(score>hiscore){hiscore=score;localStorage.setItem('riley_hiscore',hiscore);}showScr('lcs');},200);}
 
 // ── Main loop ─────────────────────────────────────────────────
 function loop(ts){
@@ -703,7 +714,7 @@ function loop(ts){
   if(timeLeft>0){
     waveTimer-=dt;
     const activeBees=bees.filter(b=>!b._dead).length;
-    if(waveTimer<=0||(activeBees===0&&timeLeft>3000)){
+    if(waveTimer<=0||(activeBees===0&&timeLeft>3000&&waveTimer<=(lv2.waveEvery||10000)*0.25)){
       waveTimer=lv2.waveEvery||10000;
       waveCount++;
       // Number of bees in wave scales with wave number
@@ -745,6 +756,10 @@ function loop(ts){
       if(!farmerOn&&fruitGot>=FNEED){farmerOn=true;farmerT=FDUR;sfx('farmer');show('fbar');$('fbar').classList.add('on');}
       checkWepUnlock();updHUD();
       checkWinCondition();
+      if(items.every(i=>i.col)&&!allItemsHintShown){
+        allItemsHintShown=true;
+        pop(W/2, H*.28, '🐝 Now clear the bees!', '#ffe066');
+      }
     }
   });
   checkWinCondition();
@@ -768,7 +783,7 @@ function loop(ts){
   if(lv.rain)rainD.forEach(r=>{r.y+=r.vy*(dt/16);if(r.y>H){r.y=-10;r.x=Math.random()*W;}});
   clouds.forEach(c=>{c.x+=c.vx*(dt/16);if(c.x>W+80)c.x=-80;});
   stars.forEach(s=>s.t+=dt*.003);
-  parts.forEach(p=>{p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vy+=.09*(dt/16);p.life-=dt*.001;});
+  parts.forEach(p=>{p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vy+=.18*(dt/16);p.vx*=.97;p.life-=dt*.001;});
   parts=parts.filter(p=>p.life>0);if(parts.length>200)parts=parts.slice(-200);
   pops.forEach(p=>{p.y+=p.vy*(dt/16);p.life-=dt*.001;});pops=pops.filter(p=>p.life>0);
   stompWaves.forEach(w=>{w.r+=dt*.14;w.alpha-=dt*.0016;});stompWaves=stompWaves.filter(w=>w.alpha>0);
@@ -1008,14 +1023,14 @@ gc.addEventListener('mousemove',e=>{if(e.buttons)inp(e.clientX,e.clientY);});
 
 // ── Flow ──────────────────────────────────────────────────────
 function startGame(){
-  LI=0;score=0;lives=3;curWep=0;beesKilled=0;totalFruit=0;
+  LI=0;score=0;hiscore=parseInt(localStorage.getItem('riley_hiscore')||'0');lives=3;curWep=0;beesKilled=0;totalFruit=0;
   showScr(null);hide('ss');show('hud');show('cbar');show('pb');show('mb');show('wepbar');show('timerbar');
   startLv();
 }
 function startLv(){
   GS='play';inv=false;invT=0;combo=0;comboT=0;shots=[];wepCd=0;buildLv();updHUD();updWepBar();
   const lvNames=['Sunny Garden','Apple Orchard','Rainy Garden','Nighttime Garden','The Big Beehive!'];
-  $('lntlvl').textContent='LEVEL '+(LI+1);$('lntnm').textContent=lvNames[LI]||'';toast('lnt',2200);
+  $('lntlvl').textContent='LEVEL '+(LI+1);$('lntnm').textContent=lvNames[LI]||'';toast('lnt',2800);
   last=performance.now();
   startBuzz();startMusic(LI);
   if(!introAudio.paused){let vol=introAudio.volume;const fade=setInterval(()=>{vol=Math.max(0,vol-0.05);introAudio.volume=vol;if(vol<=0){clearInterval(fade);stopIntro();}},100);}
