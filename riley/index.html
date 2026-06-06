@@ -222,13 +222,38 @@ const SONGS=[
           0,740,0,880, 0,1046.5,0,1174.7, 1046.5,880,740,0, 587.3,0,0,0]}
 ];
 let _mt=null,_ms=0,_mtime=0,_mlv=0;
+let _realAudio=null,_bossAudio=null;
 function startMusic(lv){
-  stopMusic();_ms=0;_mlv=Math.max(0,Math.min(lv,SONGS.length-1));
-  const a=resumeAC();if(!a){_mt=setTimeout(()=>startMusic(lv),200);return;}
-  if(a.state==='suspended'){a.resume().then(()=>{_mtime=a.currentTime+0.15;_mt=setTimeout(_tick,50);});}
-  else{_mtime=a.currentTime+0.15;_mt=setTimeout(_tick,50);}
+stopMusic();_ms=0;_mlv=Math.max(0,Math.min(lv,SONGS.length-1));
+// Real audio tracks: lv0=music-1v1.mp3, lv1=music-1v2.mp3, lv2-4=synth
+const realTracks=['sounds/music-1v1.mp3','sounds/music-1v2.mp3'];
+if(realTracks[lv]){
+_realAudio=new Audio(realTracks[lv]);
+_realAudio.loop=true;_realAudio.volume=muted?0:0.7;
+_realAudio.play().catch(()=>{_realAudio=null;_synthFallback(lv);});
+}else{_synthFallback(lv);}
 }
-function stopMusic(){if(_mt){clearTimeout(_mt);_mt=null;}}
+function _synthFallback(lv){
+_mlv=Math.max(0,Math.min(lv,SONGS.length-1));
+const a=resumeAC();if(!a){_mt=setTimeout(()=>startMusic(lv),200);return;}
+if(a.state==='suspended'){a.resume().then(()=>{_mtime=a.currentTime+0.15;_mt=setTimeout(_tick,50);});}
+else{_mtime=a.currentTime+0.15;_mt=setTimeout(_tick,50);}
+}
+function startBossMusic(){
+if(_bossAudio)return;
+if(_realAudio){_realAudio.volume=0;_realAudio.pause();}
+if(_mt){clearTimeout(_mt);_mt=null;}
+_bossAudio=new Audio('sounds/boss.mp3');
+_bossAudio.loop=true;_bossAudio.volume=muted?0:0.75;
+_bossAudio.play().catch(()=>{_bossAudio=null;});
+}
+function stopBossMusic(){
+if(!_bossAudio)return;
+try{_bossAudio.pause();_bossAudio.currentTime=0;}catch(e){}
+_bossAudio=null;
+}
+function stopMusic(){if(_mt){clearTimeout(_mt);_mt=null;}if(_realAudio){try{_realAudio.pause();_realAudio.currentTime=0;}catch(e){}}_realAudio=null;stopBossMusic();}
+
 function _drum(a,type,t){
   try{
     if(type===1){const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(40,t+0.08);g.gain.setValueAtTime(0.55,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+0.2);}
@@ -483,7 +508,7 @@ function hitBossWep(dmg){
   bossHp-=dmg;sfx('bosshit');bossHitCool=320;
   boss.angry=true;setTimeout(()=>boss&&(boss.angry=false),280);
   glitterBurst(boss.x,boss.y-40,'#ff8800','#ffe066',6);
-  if(bossHp<=0){sfx('bossdie');boss=null;glitterBurst(W/2,H/2,'#ffe066','#ff88ff',16,true);glitterBurst(W/2,H*.35,'#88ffee','#ff44aa',10,true);}
+  if(bossHp<=0){sfx('bossdie');stopBossMusic();boss=null;glitterBurst(W/2,H/2,'#ffe066','#ff88ff',16,true);glitterBurst(W/2,H*.35,'#88ffee','#ff44aa',10,true);}
   updHUD();
 }
 
@@ -610,6 +635,7 @@ function spawnBoss(gh){
   bossMaxHp=15;bossHp=15;bossHitCool=0;
   boss={x:W/2,y:H-gh-70,vx:1.3,vy:0,t:0,angry:false,charge:false,chargeT:0,stompT:0};
   setTimeout(()=>sfx('bosshit'),500);
+startBossMusic();
 }
 function updateBoss(dt){
   if(!boss)return;
@@ -1057,7 +1083,7 @@ $('h1btn').addEventListener('click',home);$('pabtn').addEventListener('click',()
 $('pb').addEventListener('click',()=>{if(GS==='play'){GS='pause';stopBuzz();stopMusic();showScr('ps');}});
 $('rsbtn').addEventListener('click',()=>{showScr(null);last=performance.now();GS='play';startBuzz();startMusic(LI);});
 $('h2btn').addEventListener('click',home);
-$('mb').addEventListener('click',()=>{muted=!muted;$('mb').textContent=muted?'🔇':'🔊';if(muted){stopBuzz();stopMusic();stopIntro();}else if(GS==='play'){startBuzz();startMusic(LI);}});
+$('mb').addEventListener('click',()=>{muted=!muted;$('mb').textContent=muted?'🔇':'🔊';if(muted){stopBuzz();stopMusic();stopIntro();if(_realAudio)_realAudio.volume=0;if(_bossAudio)_bossAudio.volume=0;}else{if(_realAudio)_realAudio.volume=0.7;if(_bossAudio)_bossAudio.volume=0.75;else if(GS==='play'){startBuzz();startMusic(LI);}}});
 function home(){
   GS='start';stopBuzz();stopMusic();stopIntro();
   hide('hud');hide('cbar');hide('pb');hide('mb');hide('wepbar');hide('timerbar');
