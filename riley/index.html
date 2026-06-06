@@ -1061,8 +1061,8 @@ function startLv(){
   startBuzz();startMusic(LI);
   if(!introAudio.paused){let vol=introAudio.volume;const fade=setInterval(()=>{vol=Math.max(0,vol-0.05);introAudio.volume=vol;if(vol<=0){clearInterval(fade);stopIntro();}},100);}
 }
-$('stbtn').addEventListener('click',()=>{resumeAC();$('lvsel').style.display=$('lvsel').style.display==='none'?'block':'none';});
-document.querySelectorAll('.lvbtn').forEach(btn=>{btn.addEventListener('click',()=>{const lvl=parseInt(btn.dataset.lv);startGame(lvl);});});
+$('stbtn').addEventListener('click',()=>{resumeAC();startIntro();$('lvsel').style.display=$('lvsel').style.display==='none'?'block':'none';});
+document.querySelectorAll('.lvbtn').forEach(btn=>{btn.addEventListener('click',()=>{resumeAC();const lvl=parseInt(btn.dataset.lv);startGame(lvl);});});
 $('nxbtn').addEventListener('click',()=>{LI++;if(LI>=LVS.length){stopBuzz();stopMusic();$('wsub').textContent='Total score: ⭐ '+score+' — Riley is a garden superstar! 🌟';sfx('win');showScr('ws');}else{showScr(null);startLv();}});
 $('rtbtn').addEventListener('click',()=>{lives=3;showScr(null);startLv();});
 $('h1btn').addEventListener('click',home);$('pabtn').addEventListener('click',()=>{startGame();});
