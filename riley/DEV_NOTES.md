@@ -31,6 +31,13 @@
 
 ## Session Log
 
+### 2026-06-07 (later) — new enemy challenge + template foundation
+- **Lv4 dive-bombing bats:** added a new `swoop` movement pattern to `moveBee()` (drifts across, then periodically dives toward the player's row and climbs back). Switched Lv4 `bp:'zigzag'` → `bp:'swoop'` and updated its tip. Verified live on Lv4 (bat y-positions sweep top↔bottom).
+- **THEME config block:** added a single `THEME` object above `LVS` holding game-wide identity — `name`, `tagline`, `hero`, `items`, `fruits`, `sounds` folder, and `enemyFallback`. Rewired `EMJ = THEME.items`, `FRUITS = new Set(THEME.fruits)`, and the drawBee/updHUD enemy fallbacks to read `THEME.enemyFallback`. Goal: reskin the game by editing only `THEME` + `LVS`, not engine code.
+- **TEMPLATE.md:** new guide explaining how to clone this folder into a different game (swap THEME/LVS, drop new files in sounds/). Documents the 6 movement patterns (linear/patrol/random/zigzag/swoop/swirl) and the emoji-sprite approach.
+- README updated with the swoop bats, pattern list, and a 'Reuse as a template' section.
+- Note: `THEME` is a `const` inside the script closure, so it is intentionally NOT on `window`; verify deploys by fetching the source text, not `window.THEME`.
+
 ### 2026-06-07 (later) — per-level enemies + boss music
 - **Distinct bad guy per level.** Added a per-level `enemy` config object: `{nm, em, mad, wing, wc}` (name, emoji, angry-emoji, draw-insect-wings flag, wing colour). Lineup: Lv1 🐝 bees, Lv2 🪲 beetles, Lv3 🐦 crows, Lv4 🦇 bats, Lv5 🐝 bee swarm + 🐻 bear boss. Reuses the existing bee movement/collision — only the look + HUD/messages change.
 - Wiring: `drawBee` reads `LVS[LI].enemy` (wings drawn only when `wing`), the HUD `×N` counter uses `enemy.em`, the “now clear the …” pop uses `enemy.nm`, and Lv2–Lv4 `tip` text was reworded (beetles/crows/bats).
