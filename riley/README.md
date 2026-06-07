@@ -32,6 +32,7 @@ Edit the file directly on GitHub; per `DEV_NOTES.md`, the CodeMirror instance is
 
 ### Fixed
 - **Levels never ended (soft-lock)** — *fixed 2026-06-07, commit `97c2814`.* The win condition needs every bee & snake dead, but a bee could drift to a spot the auto-shooter never reached (closest shot ~52px vs a 22px kill hitbox), so the level ran forever. The old "hard cap" only looped an “Almost done!” message and never finished the level. Fix: widened hitboxes (bees 22→30, snakes 20→26), strengthened dust homing with a proximity-pop, and added a real failsafe that clears lingering non-boss enemies and ends the level after `lvMinDur+8s`. Verified on production: Lv1 completes and advances to Lv2.
+- **Hard 45s level time cap** *(2026-06-07)* — belt-and-suspenders: no level can run past 45 seconds; the level auto-completes if time runs out. Boss levels get 90 seconds so the bear fight isn't cut short.
 - Level 2 endless item-respawn loop (earlier session).
 - Intro audio not playing; music AudioContext unlock; orphaned timer-hint JS rendering as page text (see `DEV_NOTES.md`).
 
