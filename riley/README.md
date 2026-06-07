@@ -19,8 +19,16 @@ Tap/click to move the fairy. She auto-targets and blasts the nearest bee/snake. 
 | 1 | Sunny Garden | 🐝 Bees | bright & simple intro |
 | 2 | Apple Orchard | 🪲 Beetles | faster, patrolling, they respawn |
 | 3 | Rainy Garden | 🐦 Crows | wind + rain, erratic flight |
-| 4 | Nighttime Garden | 🦇 Bats | dark, some hide like ghosts |
+| 4 | Nighttime Garden | 🦇 Bats | dark night — bats now **dive-bomb** the player (swoop) |
 | 5 | The Big Beehive | 🐝 Bees + 🐻 Bear Boss | beat the bear (with boss music!) to win |
+
+Each level also has its own **enemy movement pattern** (`bp` in the `LVS` config): `linear`, `patrol`, `random`, `zigzag`, `swoop` (dive-bomb), and `swirl`.
+
+## Reuse as a game template
+
+This game is built to be **reskinned** into a different game without touching the engine. All game-wide identity (name, hero character, item graphics, sound folder) lives in a single `THEME` object at the top of the script, and each level's look & difficulty lives in the `LVS` array. Swap those two blocks (plus the files in `sounds/`) and you have a new game.
+
+See **[`TEMPLATE.md`](./TEMPLATE.md)** for the full customization guide.
 
 ## Build / deploy
 
@@ -37,6 +45,7 @@ Edit the file directly on GitHub; per `DEV_NOTES.md`, the CodeMirror instance is
 - Level 2 endless item-respawn loop (earlier session).
 - Intro audio not playing; music AudioContext unlock; orphaned timer-hint JS rendering as page text (see `DEV_NOTES.md`).
 
+- **New enemy challenges + template foundation** — *2026-06-07.* Added a `swoop` dive-bomb movement pattern and assigned it to Lv4's bats (commit for Lv4), and introduced a central `THEME` config block so the game can be reskinned as a template (`EMJ`/`FRUITS`/enemy fallbacks now read from `THEME`). Documented in `TEMPLATE.md`.
 ### Open / follow-ups
 - Timer bar only refreshes inside `updHUD()` (on score change), so it can look frozen between kills — cosmetic.
 - Lv3–5 still use synth-fallback music; real `music-1v3/4/5.mp3` files not uploaded yet.
