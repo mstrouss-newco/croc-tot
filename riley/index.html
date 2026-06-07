@@ -552,9 +552,9 @@ const LVS=[
   // Lv4: 6 bees 3 snakes, zigzag + 2 ghost bees, night
   {id:4,nm:'Nighttime Garden',bgT:'#0d1b4b',bgB:'#1a3a6e',gc:'#1a4a2e',gr:'#123820',
    items:[{t:'moonflower',n:4},{t:'grapes',n:4},{t:'orange',n:3}],
-   bees:5,bs:1.35,bp:'zigzag',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:1,minDur:40000,waveEvery:9000,
+   bees:5,bs:1.35,bp:'swoop',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:1,minDur:40000,waveEvery:9000,
    enemy:{nm:'bat',em:'🦇',mad:'🦇',wing:0,wc:'#5a3a6a'},
-   tip:'Spooky bats hide in the dark!'},
+   tip:'Dive-bombing bats swoop from the dark — keep moving!'},
   // Lv5: 7 bees 3 snakes + bear boss, swirl, harder everything
   {id:5,nm:'The Big Beehive!',bgT:'#ff8c00',bgB:'#ffe066',gc:'#8b6914',gr:'#7a5c10',
    items:[{t:'sunflower',n:3},{t:'strawberry',n:3},{t:'apple',n:3},{t:'orange',n:3},{t:'rose',n:2}],
@@ -696,6 +696,7 @@ function moveBee(b,dt){
   else if(b.pat==='random'){b.x+=b.vx*(dt/16);b.y+=b.vy*(dt/16);if(b.x<10||b.x>W-10)b.vx*=-1;if(b.y<40||b.y>H*.8)b.vy*=-1;if(Math.random()<.009){b.vx+=(Math.random()-.5)*.9;b.vy+=(Math.random()-.5)*.9;}const lv=LVS[LI];b.vx=cl(b.vx,-lv.bs*1.5,lv.bs*1.5);b.vy=cl(b.vy,-lv.bs*1.5,lv.bs*1.5);}
   else if(b.pat==='zigzag'){b.x+=b.vx*(dt/16);b.y=b.by+Math.sin(b.t*3)*65;if(b.x<-40){b.x=W+40;b.by=H*.1+Math.random()*H*.65;}if(b.x>W+40){b.x=-40;b.by=H*.1+Math.random()*H*.65;}}
   else if(b.pat==='swirl'){b.x=W/2+Math.cos(b.t*.8)*120;b.y=H*.42+Math.sin(b.t*.8)*80;}
+  else if(b.pat==='swoop'){b.x+=b.vx*(dt/16);if(b.x<-40){b.x=W+40;b.by=H*.12+Math.random()*H*.4;}if(b.x>W+40){b.x=-40;b.by=H*.12+Math.random()*H*.4;}b._sw=(b._sw||0)+dt;var diveDur=2600,gap=3200;var ph=b._sw%(gap+diveDur);if(ph>gap){var k=(ph-gap)/diveDur;var dive=Math.sin(k*Math.PI);b.y=b.by+dive*(H*.55);}else{b.y=b.by+Math.sin(b.t*2)*10;}}
 }
 function moveSnake(s,dt){
   s.t+=dt*.001;const hd=s.segs[0];
