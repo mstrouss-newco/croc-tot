@@ -739,6 +739,16 @@ function loop(ts){
     if((!boss||bossHp<=0)&&GS==='play'){pop(W/2,H*.28,'⏰ Level cleared!','#ffaa00');finishLevel();}
     else{lvTimer=lvDur+5000;}
   }
+  // Absolute time cap: no level may run past 45s (boss levels get 90s so the fight isn't cut short)
+  var _maxDur=boss?90000:45000;
+  if(lvTimer>_maxDur&&GS==='play'){
+    bees.forEach((b,bi)=>{if(!b._dead)killBee(bi,b.x,b.y);});
+    snakes.forEach((s,si)=>{if(!s._dead)killSnake(si);});
+    bees=bees.filter(b=>!b._dead);snakes=snakes.filter(s=>!s._dead);
+    if(boss){boss=null;}
+    pop(W/2,H*.28,'⏱️ Time’s up — level cleared!','#ffaa00');
+    finishLevel();
+  }
   // farmer magnet
   if(farmerOn){
     farmerT-=dt;
