@@ -31,6 +31,16 @@
 
 ## Session Log
 
+### 2026-06-07
+- **Bug: levels never end (soft-lock).** Win condition needs ALL bees + snakes dead AND `lvTimer>lvMinDur`. A bee could drift to a spot the auto-shooter never reached — measured closest shot approach ~52px vs the 22px kill hitbox — so the last bee was un-killable and the level ran forever. The `lvDur+15000` "hard cap" only looped an `⏰ Almost done!` message + reset the timer; it never called `finishLevel()`.
+- **Fixes (in `index.html`):**
+  - Widened auto-shot hitboxes: bees `22 → 30`, snakes `20 → 26`.
+  - Strengthened dust homing (`.04 → .12`, target speed `3.5 → 4.8`) + added a proximity-pop: a dust shot within 34px of its target kills it, resolved via `bees.indexOf(ti)` so the stale-index-after-filter targeting bug can't misfire.
+  - Replaced the broken hard cap with a real failsafe: once `lvTimer>lvMinDur+8000`, force-clear any remaining non-boss enemies and call `finishLevel()`. Bosses still must be beaten (failsafe skips while `boss` is alive).
+- **QA / verified on production** (`croctot.com/riley/`): played Lv1 end-to-end → `GS` reached `lc`, "Amazing! Level 1 done!" shown, "Next Level" advanced to `LI=1` (Lv2, 4 bees / 2 snakes). Timer bar now advances past 0% (previously frozen).
+- **Known follow-ups:** timer bar only refreshes inside `updHUD()` (on score change), so it can look static between kills — cosmetic, not blocking. Homing shots still store `s.tgt.i` by index elsewhere; the new proximity-pop sidesteps it, but a fuller refactor to track targets by object ref would be cleaner.
+- Commit: `97c2814`
+
 ### 2026-06-06
 - Fixed intro audio: `startIntro()` existed but was never called — added call inside `stbtn` ("Let's Play!") click handler
 - Fixed music AudioContext unlock: added `resumeAC()` call inside `.lvbtn` forEach handler before `startGame()`
