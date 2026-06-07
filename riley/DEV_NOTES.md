@@ -39,6 +39,7 @@
   - Replaced the broken hard cap with a real failsafe: once `lvTimer>lvMinDur+8000`, force-clear any remaining non-boss enemies and call `finishLevel()`. Bosses still must be beaten (failsafe skips while `boss` is alive).
 - **QA / verified on production** (`croctot.com/riley/`): played Lv1 end-to-end → `GS` reached `lc`, "Amazing! Level 1 done!" shown, "Next Level" advanced to `LI=1` (Lv2, 4 bees / 2 snakes). Timer bar now advances past 0% (previously frozen).
 - **Known follow-ups:** timer bar only refreshes inside `updHUD()` (on score change), so it can look static between kills — cosmetic, not blocking. Homing shots still store `s.tgt.i` by index elsewhere; the new proximity-pop sidesteps it, but a fuller refactor to track targets by object ref would be cleaner.
+- **Added absolute 45s level time cap** (commit pending). Belt-and-suspenders on top of the `lvMinDur+8000` failsafe: in the loop, `_maxDur=boss?90000:45000`; once `lvTimer>_maxDur` while `GS==='play'`, clear remaining enemies and `finishLevel()`. Boss levels get 90s so the bear fight isn't cut short; if even that elapses the boss is cleared and the level finishes (kept kid-friendly — no harsh game-over). Note: Lv5 `minDur` is 45000, which is why boss levels need the longer 90s cap. Verified the cap is deployed and normal Lv1→Lv2 progression still works.
 - Commit: `97c2814`
 
 ### 2026-06-06
