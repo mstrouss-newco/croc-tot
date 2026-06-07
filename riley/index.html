@@ -244,9 +244,13 @@ function startBossMusic(){
 if(_bossAudio)return;
 if(_realAudio){_realAudio.volume=0;_realAudio.pause();}
 if(_mt){clearTimeout(_mt);_mt=null;}
+resumeAC();
 _bossAudio=new Audio('sounds/boss.mp3');
 _bossAudio.loop=true;_bossAudio.volume=muted?0:0.75;
-_bossAudio.play().catch(()=>{_bossAudio=null;});
+var _tryPlay=function(){if(!_bossAudio)return;_bossAudio.play().then(function(){window.removeEventListener('pointerdown',_retry);window.removeEventListener('touchstart',_retry);}).catch(function(){});};
+var _retry=function(){if(_bossAudio&&boss)_tryPlay();else{window.removeEventListener('pointerdown',_retry);window.removeEventListener('touchstart',_retry);}};
+window.addEventListener('pointerdown',_retry);window.addEventListener('touchstart',_retry);
+_tryPlay();
 }
 function stopBossMusic(){
 if(!_bossAudio)return;
