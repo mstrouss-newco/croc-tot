@@ -530,6 +530,22 @@ let PL={x:80,y:200,w:44,h:52,tx:80,ty:200,spd:3.2,f:0,ft:0};
 let items=[],bees=[],snakes=[],parts=[],pops=[],rainD=[],stars=[],clouds=[],stompWaves=[];
 let raf,last=0;
 
+/* ===================================================================
+   THEME — game identity / skin. Change THIS block to reskin the game.
+   Swap names, the player character, item emojis & sound folder here;
+   per-level look (colors, enemies, items) lives in the LVS array below.
+   See TEMPLATE.md for a full customization guide.
+   =================================================================== */
+const THEME={
+  name:'Riley\'s Garden',                 // shown in <title> / branding
+  tagline:'Pick flowers & fruit, dodge the bugs!',
+  hero:{emoji:'\uD83E\uDDDA',label:'fairy'}, // the auto-blasting helper character
+  // item graphics — the key a future user most often swaps:
+  items:{sunflower:'🌻',strawberry:'🍓',apple:'🍎',rose:'🌹',tulip:'🌷',blueberry:'🫐',moonflower:'🌸',grapes:'🍇',orange:'🍊'},
+  fruits:['strawberry','apple','blueberry','grapes','orange'], // which items count as edible 'fruit'
+  sounds:'sounds/',                       // folder holding music-1vN.mp3 + boss.mp3 + sfx
+  enemyFallback:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#e0f7ff'} // used if a level omits enemy{}
+};
 const LVS=[
   // Lv1: 3 bees 1 snake — defeat them all to advance, collect fruit for power-ups
   {id:1,nm:'Sunny Garden',    bgT:'#87CEEB',bgB:'#c8f5a0',gc:'#6dbf4f',gr:'#5aad3f',
@@ -562,8 +578,8 @@ const LVS=[
    enemy:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#ffe066'},
    tip:'Kill the Bear Boss to win!'}
 ];
-const EMJ={sunflower:'🌻',strawberry:'🍓',apple:'🍎',rose:'🌹',tulip:'🌷',blueberry:'🫐',moonflower:'🌸',grapes:'🍇',orange:'🍊'};
-const FRUITS=new Set(['strawberry','apple','blueberry','grapes','orange']);
+const EMJ=THEME.items;
+const FRUITS=new Set(THEME.fruits);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 function D(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
@@ -574,7 +590,7 @@ function updHUD(){
   const livingBees=bees.filter(b=>!b._dead).length,livingSnakes=snakes.filter(s=>!s._dead).length,enemyTotal=livingBees+livingSnakes+(boss?1:0);
   let levelText='LEVEL '+(LI+1);
   if(GS==='play'){
-    if(livingBees>0){var _en=(LVS[LI]&&LVS[LI].enemy)?LVS[LI].enemy.em:'🐝';levelText+='  '+_en+'×'+livingBees;}else{levelText+='  ✅';}
+    if(livingBees>0){var _en=(LVS[LI]&&LVS[LI].enemy)?LVS[LI].enemy.em:THEME.enemyFallback.em;levelText+='  '+_en+'×'+livingBees;}else{levelText+='  ✅';}
   }
   $('lvlb').textContent=levelText;
   $('scrd').textContent='⭐ '+score;
@@ -1011,7 +1027,7 @@ function drawFairy(x,y,fr,iv){
 }
 
 function drawBee(b){
-  var en=(LVS[LI]&&LVS[LI].enemy)||{em:'🐝',mad:'😡',wing:1,wc:'#e0f7ff'};
+  var en=(LVS[LI]&&LVS[LI].enemy)||THEME.enemyFallback;
   ctx.save();ctx.translate(b.x,b.y);
   if(en.wing){
     ctx.save();ctx.rotate(Math.sin(b.wa)*.5);ctx.globalAlpha=.7;ctx.beginPath();ctx.ellipse(-7,-8,10,6,-.5,0,Math.PI*2);ctx.fillStyle=en.wc;ctx.fill();ctx.restore();
