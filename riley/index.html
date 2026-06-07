@@ -531,26 +531,31 @@ const LVS=[
   {id:1,nm:'Sunny Garden',    bgT:'#87CEEB',bgB:'#c8f5a0',gc:'#6dbf4f',gr:'#5aad3f',
    items:[{t:'sunflower',n:3},{t:'strawberry',n:3},{t:'orange',n:2}],
    bees:3,bs:.7,bp:'linear',snk:1,ss:.6,minDur:30000,waveEvery:11000,
+   enemy:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#e0f7ff'},
    tip:'Blast all bees & snakes! Collect fruit for weapons!'},
   // Lv2: 4 bees 2 snakes, patrol + faster, bees respawn once
   {id:2,nm:'Apple Orchard',   bgT:'#b3e5fc',bgB:'#d4f5b0',gc:'#7cba5a',gr:'#6aaa48',
    items:[{t:'apple',n:4},{t:'rose',n:3},{t:'orange',n:3}],
    bees:4,bs:1.1,bp:'patrol',snk:2,ss:.9,beesRespawn:2,minDur:33000,waveEvery:10000,
-   tip:'Bees patrol and respawn! Grab fruit fast!'},
+   enemy:{nm:'beetle',em:'🪲',mad:'🐞',wing:1,wc:'#3a2a1a'},
+   tip:'Beetles patrol the orchard — grab fruit fast!'},
   // Lv3: 5 bees 2 snakes, random + wind, rain
   {id:3,nm:'Rainy Garden',    bgT:'#78909c',bgB:'#b0bec5',gc:'#5d8a4e',gr:'#4e7a40',
    items:[{t:'tulip',n:4},{t:'blueberry',n:4},{t:'orange',n:3}],
    bees:5,bs:1.25,bp:'random',snk:2,ss:1.1,rain:true,wind:.4,beesRespawn:2,minDur:36000,waveEvery:9000,
-   tip:'Wind & rain! Bees are erratic!'},
+   enemy:{nm:'crow',em:'🐦',mad:'🕊️',wing:0,wc:'#444'},
+   tip:'Stormy crows swoop in the wind & rain!'},
   // Lv4: 6 bees 3 snakes, zigzag + 2 ghost bees, night
   {id:4,nm:'Nighttime Garden',bgT:'#0d1b4b',bgB:'#1a3a6e',gc:'#1a4a2e',gr:'#123820',
    items:[{t:'moonflower',n:4},{t:'grapes',n:4},{t:'orange',n:3}],
    bees:5,bs:1.35,bp:'zigzag',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:1,minDur:40000,waveEvery:9000,
-   tip:'Ghost bees hide in the dark!'},
+   enemy:{nm:'bat',em:'🦇',mad:'🦇',wing:0,wc:'#5a3a6a'},
+   tip:'Spooky bats hide in the dark!'},
   // Lv5: 7 bees 3 snakes + bear boss, swirl, harder everything
   {id:5,nm:'The Big Beehive!',bgT:'#ff8c00',bgB:'#ffe066',gc:'#8b6914',gr:'#7a5c10',
    items:[{t:'sunflower',n:3},{t:'strawberry',n:3},{t:'apple',n:3},{t:'orange',n:3},{t:'rose',n:2}],
    bees:7,bs:1.6,bp:'swirl',snk:3,ss:1.4,bearBoss:true,beesRespawn:2,minDur:45000,waveEvery:8000,
+   enemy:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#ffe066'},
    tip:'Kill the Bear Boss to win!'}
 ];
 const EMJ={sunflower:'🌻',strawberry:'🍓',apple:'🍎',rose:'🌹',tulip:'🌷',blueberry:'🫐',moonflower:'🌸',grapes:'🍇',orange:'🍊'};
@@ -565,7 +570,7 @@ function updHUD(){
   const livingBees=bees.filter(b=>!b._dead).length,livingSnakes=snakes.filter(s=>!s._dead).length,enemyTotal=livingBees+livingSnakes+(boss?1:0);
   let levelText='LEVEL '+(LI+1);
   if(GS==='play'){
-    if(livingBees>0){levelText+='  🐝×'+livingBees;}else{levelText+='  ✅';}
+    if(livingBees>0){var _en=(LVS[LI]&&LVS[LI].enemy)?LVS[LI].enemy.em:'🐝';levelText+='  '+_en+'×'+livingBees;}else{levelText+='  ✅';}
   }
   $('lvlb').textContent=levelText;
   $('scrd').textContent='⭐ '+score;
@@ -815,7 +820,7 @@ function loop(ts){
       checkWinCondition();
       if(items.every(i=>i.col)&&!allItemsHintShown){
         allItemsHintShown=true;
-        pop(W/2, H*.28, '🐝 Now clear the bees!', '#ffe066');
+        pop(W/2, H*.28, ((LVS[LI]&&LVS[LI].enemy)?LVS[LI].enemy.em:'🐝')+' Now clear the '+((LVS[LI]&&LVS[LI].enemy)?LVS[LI].enemy.nm:'bee')+'s!', '#ffe066');
       }
     }
   });
@@ -1001,10 +1006,13 @@ function drawFairy(x,y,fr,iv){
 }
 
 function drawBee(b){
+  var en=(LVS[LI]&&LVS[LI].enemy)||{em:'🐝',mad:'😡',wing:1,wc:'#e0f7ff'};
   ctx.save();ctx.translate(b.x,b.y);
-  ctx.save();ctx.rotate(Math.sin(b.wa)*.5);ctx.globalAlpha=.7;ctx.beginPath();ctx.ellipse(-7,-8,10,6,-.5,0,Math.PI*2);ctx.fillStyle='#e0f7ff';ctx.fill();ctx.restore();
-  ctx.save();ctx.scale(-1,1);ctx.rotate(Math.sin(b.wa)*.5);ctx.globalAlpha=.7;ctx.beginPath();ctx.ellipse(-7,-8,10,6,-.5,0,Math.PI*2);ctx.fillStyle='#e0f7ff';ctx.fill();ctx.restore();
-  ctx.globalAlpha=1;drawEmoji(b.angry?'😡':'🐝',0,0,32);ctx.restore();
+  if(en.wing){
+    ctx.save();ctx.rotate(Math.sin(b.wa)*.5);ctx.globalAlpha=.7;ctx.beginPath();ctx.ellipse(-7,-8,10,6,-.5,0,Math.PI*2);ctx.fillStyle=en.wc;ctx.fill();ctx.restore();
+    ctx.save();ctx.scale(-1,1);ctx.rotate(Math.sin(b.wa)*.5);ctx.globalAlpha=.7;ctx.beginPath();ctx.ellipse(-7,-8,10,6,-.5,0,Math.PI*2);ctx.fillStyle=en.wc;ctx.fill();ctx.restore();
+  }
+  ctx.globalAlpha=1;drawEmoji(b.angry?en.mad:en.em,0,0,32);ctx.restore();
 }
 
 function drawSnake(s){
