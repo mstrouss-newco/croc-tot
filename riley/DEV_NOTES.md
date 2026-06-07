@@ -31,6 +31,13 @@
 
 ## Session Log
 
+### 2026-06-07 (later) — per-level enemies + boss music
+- **Distinct bad guy per level.** Added a per-level `enemy` config object: `{nm, em, mad, wing, wc}` (name, emoji, angry-emoji, draw-insect-wings flag, wing colour). Lineup: Lv1 🐝 bees, Lv2 🪲 beetles, Lv3 🐦 crows, Lv4 🦇 bats, Lv5 🐝 bee swarm + 🐻 bear boss. Reuses the existing bee movement/collision — only the look + HUD/messages change.
+- Wiring: `drawBee` reads `LVS[LI].enemy` (wings drawn only when `wing`), the HUD `×N` counter uses `enemy.em`, the “now clear the …” pop uses `enemy.nm`, and Lv2–Lv4 `tip` text was reworded (beetles/crows/bats).
+- **Boss music hardened.** `startBossMusic()` now calls `resumeAC()` and, if the browser blocks autoplay, keeps `_bossAudio` and retries on the next `pointerdown`/`touchstart` instead of nulling it on first failure (the old `.play().catch(()=>_bossAudio=null)` could permanently kill boss music if the first attempt wasn’t a trusted gesture). `boss.mp3` already triggers via `spawnBoss()` on Lv5; this just makes it reliable.
+- QA: verified on production each level shows its creature (HUD + sprites), and the bear boss + HP bar appear on Lv5. Note: boss music can’t be auto-verified from a scripted `startGame()` call because browsers require a real user gesture to start audio — confirm on a real tap.
+- Commits: `faf3c59` (enemies), `b7d8c88` (boss music).
+
 ### 2026-06-07
 - **Bug: levels never end (soft-lock).** Win condition needs ALL bees + snakes dead AND `lvTimer>lvMinDur`. A bee could drift to a spot the auto-shooter never reached — measured closest shot approach ~52px vs the 22px kill hitbox — so the last bee was un-killable and the level ran forever. The `lvDur+15000` "hard cap" only looped an `⏰ Almost done!` message + reset the timer; it never called `finishLevel()`.
 - **Fixes (in `index.html`):**
