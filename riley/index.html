@@ -421,7 +421,9 @@ function updateShots(dt){
       if(ti){
         const tx=ti.x||(ti.segs&&ti.segs[0].x)||0,ty=ti.y||(ti.segs&&ti.segs[0].y)||0;
         const dx=tx-s.x,dy=ty-s.y,d=Math.sqrt(dx*dx+dy*dy)||1;
-        s.vx+=(dx/d*3.5-s.vx)*.04;s.vy+=(dy/d*3.5-s.vy)*.04;
+        s.vx+=(dx/d*4.8-s.vx)*.12;s.vy+=(dy/d*4.8-s.vy)*.12;
+        // dust homes in and pops target on close approach (prevents un-killable drifting bees)
+        if(s.type==='dust'&&d<34){if(s.tgt.type==='bee'){var _bi=bees.indexOf(ti);if(_bi>=0)killBee(_bi,ti.x,ti.y);}else if(s.tgt.type==='snake'){var _si=snakes.indexOf(ti);if(_si>=0)killSnake(_si);}s.life=0;return;}
         // bomb explodes on contact
         if(s.type==='bomb'&&d<30){bombExplode(s);s.life=0;return;}
       }
@@ -464,7 +466,7 @@ function updateShots(dt){
     if(s._spent&&!s.pierce)return;
     // vs bees (reverse so splice is safe)
     for(let bi=bees.length-1;bi>=0;bi--){
-      if(D(s.x,s.y,bees[bi].x,bees[bi].y)<22){
+      if(D(s.x,s.y,bees[bi].x,bees[bi].y)<30){
         killBee(bi,s.x,s.y);
         if(!s.pierce){s.life=0;return;}
         s._spent=true;
@@ -472,7 +474,7 @@ function updateShots(dt){
     }
     // vs snakes
     for(let si=snakes.length-1;si>=0;si--){
-      if(D(s.x,s.y,snakes[si].segs[0].x,snakes[si].segs[0].y)<20){
+      if(D(s.x,s.y,snakes[si].segs[0].x,snakes[si].segs[0].y)<26){
         killSnake(si);
         if(!s.pierce){s.life=0;return;}
         s._spent=true;
@@ -730,8 +732,12 @@ function loop(ts){
     finishLevel();
   }
   // Hard cap: if taking way too long, nudge with time warning but no penalty
-  if(lvTimer>lvDur+15000){
-    pop(W/2,H*.28,'⏰ Almost done!','#ffaa00');lvTimer=lvDur+5000;
+  if(lvTimer>lvMinDur+8000){
+    bees.forEach((b,bi)=>{if(!b._dead)killBee(bi,b.x,b.y);});
+    snakes.forEach((s,si)=>{if(!s._dead)killSnake(si);});
+    bees=bees.filter(b=>!b._dead);snakes=snakes.filter(s=>!s._dead);
+    if((!boss||bossHp<=0)&&GS==='play'){pop(W/2,H*.28,'⏰ Level cleared!','#ffaa00');finishLevel();}
+    else{lvTimer=lvDur+5000;}
   }
   // farmer magnet
   if(farmerOn){
