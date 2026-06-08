@@ -1,6 +1,6 @@
 # Riley's Garden 🌸
 
-A cozy arcade game where a friendly **magnet** auto-blasts bees, you collect flowers & fruit for power-ups, and dodge snakes and a bear boss across 5 levels.
+A cozy arcade game where a friendly **fairy** auto-blasts bees, you collect flowers & fruit for power-ups, and dodge snakes and a bear boss across 5 levels.
 
 - **Play:** https://croctot.com/riley/
 - **Source:** everything lives in [`riley/index.html`](./index.html) + [`riley/sounds/`](./sounds) (single-file game; no build step).
@@ -10,7 +10,7 @@ A cozy arcade game where a friendly **magnet** auto-blasts bees, you collect flo
 
 ## How to play
 
-Tap/click to move the **magnet hero**. It auto-targets and blasts the nearest bee/snake, and while the magnet power-up is active it shows a pulsing magnetic-pull halo and reels in nearby fruit & flowers. Collect fruit & flowers to unlock stronger weapons. Survive the level's minimum time **and** clear all bees & snakes to advance. On the final level, survive the level and then the bear boss appears at the end — beat it to win.
+Tap/click to move the **fairy hero**. She auto-targets and blasts the nearest bee, and reels in nearby fruit & flowers. Collect fruit & flowers to unlock stronger weapons and the **magnet power-up** — while it's active the fairy shows a pulsing magnetic-pull halo. Survive the level's minimum time **and** clear all bees to advance (snakes are dodge-only hazards, not required kills). On the final level, survive the level and then the bear boss appears at the end — beat it to win.
 
 ## Levels
 
@@ -41,7 +41,9 @@ Edit the file directly on GitHub; per `DEV_NOTES.md`, the CodeMirror instance is
 ## Known bugs & fixes
 
 ### Fixed
-- **Hero is now a magnet** — *2026-06-08.* The player character is a red horseshoe magnet (replacing the fairy sprite) and shows an animated magnetic-pull halo while the magnet power-up is active.
+- **Levels no longer run forever** — *2026-06-08.* The win condition required *all snakes* to be killed, but snakes are dodge-only obstacles the player never has to kill — so any surviving snake left the level stuck with no enemies and no way to end. Removed the snake-kill requirement: a level now finishes once the minimum duration is reached, all bees are cleared, and the boss (if any) is beaten. Snakes remain as hazards to dodge.
+- **Hero is the fairy again; magnet effect is now a power-up only** — *2026-06-08.* Reverted the avatar from the horseshoe magnet back to the fairy sprite (winged, with wand + sparkle aura). The magnetic-pull halo (blue rings + glow) now appears **only while the magnet power-up is active** (`farmerOn`), not at all times.
+- **Hero is now a magnet** — *2026-06-08.* ~~Made the avatar a horseshoe magnet.~~ **Superseded same day:** reverted to the fairy avatar (see above); the magnet visual is now power-up-only.
 - **Bear boss now appears at the END of Level 5** — *2026-06-08.* Previously the bear spawned at the start of Lv5; now you survive the level first and the bear arrives at the end (with a short warning), and you must beat it to win.
 - **All levels last 30 seconds** — *2026-06-08.* Every level's minimum survival time is now 30s, followed by the bear fight on Lv5 (~15–30s).
 - **Music for Levels 3–5** — *2026-06-08.* Lv3–5 now play their real audio tracks (`music-1v3`, `music-1v4`, `music-lv5`) instead of the synth fallback; boss music still plays for the bear.
