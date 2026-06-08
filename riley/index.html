@@ -227,7 +227,7 @@ let _realAudio=null,_bossAudio=null;
 function startMusic(lv){
 stopMusic();_ms=0;_mlv=Math.max(0,Math.min(lv,SONGS.length-1));
 // Real audio tracks: lv0=music-1v1.mp3, lv1=music-1v2.mp3, lv2-4=synth
-const realTracks=['sounds/music-1v1.mp3','sounds/music-1v2.mp3'];
+const realTracks=['sounds/music-1v1.mp3','sounds/music-1v2.mp3','sounds/music-1v3.mp3','sounds/music-1v4.mp3','sounds/music-lv5.mp3'];
 if(realTracks[lv]){
 _realAudio=new Audio(realTracks[lv]);
 _realAudio.loop=true;_realAudio.volume=muted?0:0.7;
@@ -525,7 +525,7 @@ let _timesUpHinted=false;
 let combo=0,comboT=0,collected=0,total=0,fruitGot=0;
 let farmerOn=false,farmerT=0;
 const FNEED=5,FDUR=13000,FR=110;
-let boss=null,bossHp=0,bossMaxHp=0,bossHitCool=0;
+let boss=null,bossHp=0,bossMaxHp=0,bossHitCool=0,bossPending=false,bossSpawned=false,bossWarned=false;
 let PL={x:80,y:200,w:44,h:52,tx:80,ty:200,spd:3.2,f:0,ft:0};
 let items=[],bees=[],snakes=[],parts=[],pops=[],rainD=[],stars=[],clouds=[],stompWaves=[];
 let raf,last=0;
@@ -539,7 +539,7 @@ let raf,last=0;
 const THEME={
   name:'Riley\'s Garden',                 // shown in <title> / branding
   tagline:'Pick flowers & fruit, dodge the bugs!',
-  hero:{emoji:'\uD83E\uDDDA',label:'fairy'}, // the auto-blasting helper character
+  hero:{emoji:'\uD83E\uDDF2',label:'magnet'}, // the auto-blasting helper character
   // item graphics — the key a future user most often swaps:
   items:{sunflower:'🌻',strawberry:'🍓',apple:'🍎',rose:'🌹',tulip:'🌷',blueberry:'🫐',moonflower:'🌸',grapes:'🍇',orange:'🍊'},
   fruits:['strawberry','apple','blueberry','grapes','orange'], // which items count as edible 'fruit'
@@ -556,25 +556,25 @@ const LVS=[
   // Lv2: 4 bees 2 snakes, patrol + faster, bees respawn once
   {id:2,nm:'Apple Orchard',   bgT:'#b3e5fc',bgB:'#d4f5b0',gc:'#7cba5a',gr:'#6aaa48',
    items:[{t:'apple',n:4},{t:'rose',n:3},{t:'orange',n:3}],
-   bees:4,bs:1.1,bp:'patrol',snk:2,ss:.9,beesRespawn:2,minDur:33000,waveEvery:10000,
+   bees:4,bs:1.1,bp:'patrol',snk:2,ss:.9,beesRespawn:2,minDur:30000,waveEvery:10000,
    enemy:{nm:'beetle',em:'🪲',mad:'🐞',wing:1,wc:'#3a2a1a'},
    tip:'Beetles patrol the orchard — grab fruit fast!'},
   // Lv3: 5 bees 2 snakes, random + wind, rain
   {id:3,nm:'Rainy Garden',    bgT:'#78909c',bgB:'#b0bec5',gc:'#5d8a4e',gr:'#4e7a40',
    items:[{t:'tulip',n:4},{t:'blueberry',n:4},{t:'orange',n:3}],
-   bees:5,bs:1.25,bp:'random',snk:2,ss:1.1,rain:true,wind:.4,beesRespawn:2,minDur:36000,waveEvery:9000,
+   bees:5,bs:1.25,bp:'random',snk:2,ss:1.1,rain:true,wind:.4,beesRespawn:2,minDur:30000,waveEvery:9000,
    enemy:{nm:'crow',em:'🐦',mad:'🕊️',wing:0,wc:'#444'},
    tip:'Stormy crows swoop in the wind & rain!'},
   // Lv4: 6 bees 3 snakes, zigzag + 2 ghost bees, night
   {id:4,nm:'Nighttime Garden',bgT:'#0d1b4b',bgB:'#1a3a6e',gc:'#1a4a2e',gr:'#123820',
    items:[{t:'moonflower',n:4},{t:'grapes',n:4},{t:'orange',n:3}],
-   bees:5,bs:1.35,bp:'swoop',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:1,minDur:40000,waveEvery:9000,
+   bees:5,bs:1.35,bp:'swoop',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:1,minDur:30000,waveEvery:9000,
    enemy:{nm:'bat',em:'🦇',mad:'🦇',wing:0,wc:'#5a3a6a'},
    tip:'Dive-bombing bats swoop from the dark — keep moving!'},
   // Lv5: 7 bees 3 snakes + bear boss, swirl, harder everything
   {id:5,nm:'The Big Beehive!',bgT:'#ff8c00',bgB:'#ffe066',gc:'#8b6914',gr:'#7a5c10',
    items:[{t:'sunflower',n:3},{t:'strawberry',n:3},{t:'apple',n:3},{t:'orange',n:3},{t:'rose',n:2}],
-   bees:7,bs:1.6,bp:'swirl',snk:3,ss:1.4,bearBoss:true,beesRespawn:2,minDur:45000,waveEvery:8000,
+   bees:7,bs:1.6,bp:'swirl',snk:3,ss:1.4,bearBoss:true,beesRespawn:2,minDur:30000,waveEvery:8000,
    enemy:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#ffe066'},
    tip:'Kill the Bear Boss to win!'}
 ];
@@ -653,7 +653,7 @@ function buildLv(){
   for(let i=0;i<7;i++)clouds.push({x:Math.random()*W,y:20+Math.random()*(H*.22),s:.6+Math.random()*.8,vx:.15+Math.random()*.2});
   if(lv.night)for(let i=0;i<(lv.stars||35);i++)stars.push({x:Math.random()*W,y:Math.random()*(H*.6),r:.8+Math.random()*2,t:Math.random()*Math.PI*2});
   if(lv.rain)for(let i=0;i<70;i++)rainD.push({x:Math.random()*W,y:Math.random()*H,vy:6+Math.random()*4,len:12});
-  if(lv.bearBoss)spawnBoss(gh);
+  if(lv.bearBoss){bossPending=true;bossSpawned=false;}else{bossPending=false;bossSpawned=false;}
   $('lce').textContent=['🌻','🍎','🌈','⭐','🏆'][LI]||'🌟';
   $('nxbtn').textContent=LI>=LVS.length-1?'🏆 Finish!':'Next Level ➡️';
   updHUD();updWepBar();
@@ -731,9 +731,15 @@ function checkWinCondition(){
   if(GS!=='play')return;
   const allBeesGone=bees.filter(b=>!b._dead).length===0;
   const allSnakesGone=snakes.filter(s=>!s._dead).length===0;
-  const bossGone=!boss||bossHp<=0;
-  // Must survive minimum time AND clear all current enemies
   const minDone=lvTimer>=lvMinDur;
+  // ── Deferred boss: the bear appears only AFTER you survive the level, then must be beaten ──
+  if(bossPending&&!bossSpawned){
+    if(!bossWarned&&lvTimer>=lvMinDur-3000){bossWarned=true;pop(W/2,H*.30,'\uD83D\uDC3B The Bear is coming!','#ff5a5a');sfx('bosshit');}
+    if(minDone){bossSpawned=true;spawnBoss(GH());pop(W/2,H*.30,'\uD83D\uDC3B BEAR BOSS!','#ff3344');}
+    return; // don't finish while the boss is still due to appear
+  }
+  if(bossPending&&bossSpawned&&boss){return;} // boss still alive — keep fighting
+  const bossGone=!boss||bossHp<=0;
   if(allBeesGone&&allSnakesGone&&bossGone&&minDone)finishLevel();
 }
 function finishLevel(){GS='lc';stopBuzz();stopMusic();setTimeout(()=>{sfx('lc');const lvBonus=collected*10;$('lcsub').textContent='Level '+(LI+1)+' done! +'+lvBonus+' pts';score+=lvBonus;if(score>hiscore){hiscore=score;localStorage.setItem('riley_hiscore',hiscore);}showScr('lcs');},200);}
@@ -754,11 +760,12 @@ function loop(ts){
   lvTimer+=dt;
   // Timer bar shows progress toward minimum duration
   
-  if(lvTimer>=lvMinDur&&!_timesUpHinted){_timesUpHinted=true;const _rem=bees.filter(b=>!b._dead).length+snakes.filter(s=>!s._dead).length;if(_rem>0)pop(W/2,H*.28,'🐝 Clear '+_rem+' left to win!','#ffe066');}if(lvTimer>=lvMinDur&&bees.filter(b=>!b._dead).length===0&&snakes.filter(s=>!s._dead).length===0&&(!boss||bossHp<=0)){
+  if(lvTimer>=lvMinDur&&!_timesUpHinted){_timesUpHinted=true;const _rem=bees.filter(b=>!b._dead).length+snakes.filter(s=>!s._dead).length;if(_rem>0)pop(W/2,H*.28,'🐝 Clear '+_rem+' left to win!','#ffe066');}if(lvTimer>=lvMinDur&&bees.filter(b=>!b._dead).length===0&&snakes.filter(s=>!s._dead).length===0&&(!boss||bossHp<=0)&&!bossPending){
     finishLevel();
   }
   // Hard cap: if taking way too long, nudge with time warning but no penalty
-  if(lvTimer>lvMinDur+8000){
+  var _failAt=(bossPending)?lvMinDur+35000:lvMinDur+8000;
+  if(lvTimer>_failAt){
     bees.forEach((b,bi)=>{if(!b._dead)killBee(bi,b.x,b.y);});
     snakes.forEach((s,si)=>{if(!s._dead)killSnake(si);});
     bees=bees.filter(b=>!b._dead);snakes=snakes.filter(s=>!s._dead);
@@ -978,51 +985,63 @@ function draw(dt){
     ctx.restore();
   });
   // fairy + farmer
-  if(farmerOn)drawFarmer(PL.x,PL.y);
+  /* hero is now the magnet sprite; old farmer overlay disabled */
   drawFairy(PL.x,PL.y,PL.f,inv);
   // magnet ring
-  if(farmerOn){ctx.save();ctx.globalAlpha=.1+Math.sin(Date.now()*.005)*.07;ctx.strokeStyle='#ffe066';ctx.lineWidth=3;ctx.beginPath();ctx.arc(PL.x,PL.y,FR,0,Math.PI*2);ctx.stroke();ctx.restore();}
+  if(farmerOn){ctx.save();ctx.globalAlpha=.12+Math.sin(Date.now()*.005)*.08;ctx.strokeStyle='#6eaaff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(PL.x,PL.y,FR,0,Math.PI*2);ctx.stroke();ctx.restore();}
 }
 
 function drawEmoji(e,x,y,sz){ctx.save();ctx.font=sz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(e,x,y);ctx.restore();}
 
 function drawFairy(x,y,fr,iv){
-  if(iv&&Math.floor(Date.now()/80)%2===0)return;
+  // Hero is a horseshoe MAGNET. When 'working' (magnet power-up active) a magnetic-pull halo pulses around it.
+  if(iv&&Math.floor(Date.now()/80)%2===0)return; // invincibility blink
+  const bob=Math.sin(fr*.18)*2.2, yy=y+bob;
   ctx.save();
-  const bob=Math.sin(fr*.28)*2.5,yy=y+bob;
-  ctx.beginPath();ctx.ellipse(x,y+22,13,4,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.17)';ctx.fill();
-  const wf=Math.sin(fr*.45)*.16;
-  [[1,-8,18,10,-0.55,'rgba(255,80,150,.58)','rgba(255,190,50,.45)'],[1,5,12,7,.4,'rgba(100,170,255,.55)','rgba(190,80,255,.45)'],[-1,-8,18,10,-0.55,'rgba(255,80,150,.58)','rgba(255,190,50,.45)'],[-1,5,12,7,.4,'rgba(100,170,255,.55)','rgba(190,80,255,.45)']].forEach(([sx,ey,rx,ry,ang,c1,c2])=>{
-    ctx.save();ctx.translate(x,yy-10);ctx.scale(sx,1);ctx.save();ctx.rotate(wf*(ey<0?-1:1));
-    ctx.beginPath();ctx.ellipse(rx,ey,rx,ry,ang,0,Math.PI*2);
-    const wg=ctx.createLinearGradient(0,-20,28,10);wg.addColorStop(0,c1);wg.addColorStop(1,c2);
-    ctx.fillStyle=wg;ctx.fill();ctx.restore();ctx.restore();
-  });
-  ctx.save();ctx.translate(x,yy+16);ctx.strokeStyle='#f4c2a1';ctx.lineWidth=3.5;ctx.lineCap='round';
-  const ls=Math.sin(fr*.3)*5;
-  ctx.beginPath();ctx.moveTo(-4,0);ctx.lineTo(-5+ls,14);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(4,0);ctx.lineTo(5-ls,14);ctx.stroke();
-  ctx.fillStyle='#c4005e';ctx.beginPath();ctx.ellipse(-5+ls,15,4,3,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(5-ls,15,4,3,0,0,Math.PI*2);ctx.fill();ctx.restore();
-  ctx.save();ctx.translate(x,yy);
-  const dg=ctx.createLinearGradient(0,-4,0,20);dg.addColorStop(0,'#ff85c2');dg.addColorStop(1,'#ff3d9a');
-  ctx.beginPath();ctx.moveTo(-7,0);ctx.quadraticCurveTo(-11,9,-13,20);ctx.lineTo(13,20);ctx.quadraticCurveTo(11,9,7,0);ctx.closePath();ctx.fillStyle=dg;ctx.fill();ctx.restore();
-  ctx.save();ctx.translate(x,yy);ctx.strokeStyle='#f4c2a1';ctx.lineWidth=3.2;ctx.lineCap='round';
-  const as=Math.sin(fr*.3+1)*4;
-  ctx.beginPath();ctx.moveTo(-6,1);ctx.quadraticCurveTo(-16,6,-14+as,13);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(6,1);ctx.quadraticCurveTo(16,6,14-as,13);ctx.stroke();ctx.restore();
-  ctx.save();ctx.translate(x,yy-16);
-  ctx.fillStyle='#f4c2a1';ctx.fillRect(-2.5,8,5,7);
-  ctx.beginPath();ctx.ellipse(0,0,9,10,0,0,Math.PI*2);ctx.fillStyle='#fde0c8';ctx.fill();
-  ctx.fillStyle='#c8860a';ctx.beginPath();ctx.ellipse(0,-7,10,7,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(-10,1,4,7,-.3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(10,1,4,7,.3,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#3d2000';ctx.beginPath();ctx.ellipse(-3.5,-1,2,2.5,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(3.5,-1,2,2.5,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-2.8,-2,.85,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4.2,-2,.85,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=.36;ctx.fillStyle='#ff9db0';ctx.beginPath();ctx.ellipse(-6,2,3.5,2,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(6,2,3.5,2,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
-  ctx.strokeStyle='#c8607a';ctx.lineWidth=1.3;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,3,3.5,.2,Math.PI-.2);ctx.stroke();
-  ctx.fillStyle='#ff4da6';ctx.beginPath();ctx.ellipse(-5,-14,5,3,-.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(5,-14,5,3,.5,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#ff85c2';ctx.beginPath();ctx.arc(0,-14,3,0,Math.PI*2);ctx.fill();ctx.restore();
-  ctx.save();ctx.translate(x+14,yy-8);ctx.strokeStyle='#d4a0ff';ctx.lineWidth=1.8;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-7,14);ctx.stroke();
-  ctx.globalAlpha=.6+Math.sin(fr*.6)*.4;ctx.font='11px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ffe066';ctx.fillText('✦',0,0);ctx.restore();
+  // soft ground shadow
+  ctx.beginPath();ctx.ellipse(x,y+22,13,4,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.18)';ctx.fill();
+  // ── magnetic-pull halo (only while the magnet is actively working) ──
+  if(typeof farmerOn!=='undefined'&&farmerOn){
+    const t=Date.now()*.004;
+    for(let k=0;k<3;k++){
+      const ph=(t+k*0.66)%1; // 0..1 expanding ring
+      const rr=18+ph*((typeof FR!=='undefined'?FR:120)-18);
+      ctx.beginPath();ctx.arc(x,yy,rr,0,Math.PI*2);
+      ctx.strokeStyle='rgba(110,170,255,'+(0.45*(1-ph))+')';
+      ctx.lineWidth=3;ctx.stroke();
+    }
+    // inner glow
+    const g=ctx.createRadialGradient(x,yy,4,x,yy,34);
+    g.addColorStop(0,'rgba(120,180,255,.30)');g.addColorStop(1,'rgba(120,180,255,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,yy,34,0,Math.PI*2);ctx.fill();
+  }
+  // ── horseshoe magnet body ──
+  ctx.translate(x,yy);
+  const wob=Math.sin(fr*.12)*0.06; ctx.rotate(wob);
+  const Wd=20,Hh=24,th=8; // overall width/height, arm thickness
+  // red U-shape (top arc + two arms)
+  ctx.lineCap='butt';
+  ctx.strokeStyle='#e23b3b';ctx.lineWidth=th;
+  ctx.beginPath();
+  ctx.arc(0,-2,Wd/2,Math.PI,0,false); // top semicircle
+  ctx.moveTo(-Wd/2,-2);ctx.lineTo(-Wd/2,Hh-6); // left arm
+  ctx.moveTo(Wd/2,-2);ctx.lineTo(Wd/2,Hh-6);  // right arm
+  ctx.stroke();
+  // subtle red shading highlight
+  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(0,-2,Wd/2+1,Math.PI,1.5*Math.PI,false);ctx.stroke();
+  // silver pole tips at the bottom of each arm
+  ctx.fillStyle='#d9dde3';
+  ctx.fillRect(-Wd/2-th/2, Hh-8, th, 7);
+  ctx.fillRect( Wd/2-th/2, Hh-8, th, 7);
+  ctx.fillStyle='rgba(255,255,255,.6)';
+  ctx.fillRect(-Wd/2-th/2, Hh-8, th, 2);
+  ctx.fillRect( Wd/2-th/2, Hh-8, th, 2);
+  // tiny eyes to keep it friendly/kid-cute
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(-5,-4,3,0,Math.PI*2);ctx.arc(5,-4,3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.arc(-5,-4,1.4,0,Math.PI*2);ctx.arc(5,-4,1.4,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
 
