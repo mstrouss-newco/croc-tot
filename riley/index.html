@@ -736,11 +736,17 @@ function hitPlayer(){
 function endGame(){GS='over';stopBuzz();stopMusic();setTimeout(()=>{sfx('over');showScr('gos');},300);}
 function checkWinCondition(){
   if(GS!=='play')return;
-  // --- SAFETY NET: once the level's minimum time is up, cull any bee that is unreachable (off-screen/stranded) so the level can never hang. ---
+  // --- SAFETY NET (two-stage): guarantee the level can never hang. ---
   if(lvTimer>=lvMinDur){
     var _culled=false;
+    // Stage 1: cull any bee that has wandered off-screen / unreachable.
     for(var _i=0;_i<bees.length;_i++){var _b=bees[_i];
-      if(!_b._dead && (_b.x<-30||_b.x>W+30||_b.y<-30||_b.y>H+30)){ _b._dead=true; _culled=true; }
+      if(!_b._dead && (_b.x<-20||_b.x>W+20||_b.y<-20||_b.y>H+20)){ _b._dead=true; _culled=true; }
+    }
+    // Stage 2: a few seconds past the minimum, force-clear ALL remaining bees no matter where they are,
+    // so a stuck/oscillating/ghost bee can never keep the level alive forever.
+    if(lvTimer>=lvMinDur+4000){
+      for(var _j=0;_j<bees.length;_j++){ if(!bees[_j]._dead){ bees[_j]._dead=true; _culled=true; } }
     }
     if(_culled){ bees=bees.filter(function(b){return !b._dead;}); }
   }
