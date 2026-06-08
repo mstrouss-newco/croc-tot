@@ -713,6 +713,13 @@ function moveBee(b,dt){
   else if(b.pat==='zigzag'){b.x+=b.vx*(dt/16);b.y=b.by+Math.sin(b.t*3)*65;if(b.x<-40){b.x=W+40;b.by=H*.1+Math.random()*H*.65;}if(b.x>W+40){b.x=-40;b.by=H*.1+Math.random()*H*.65;}}
   else if(b.pat==='swirl'){b.x=W/2+Math.cos(b.t*.8)*120;b.y=H*.42+Math.sin(b.t*.8)*80;}
   else if(b.pat==='swoop'){b.x+=b.vx*(dt/16);if(b.x<-40){b.x=W+40;b.by=H*.12+Math.random()*H*.4;}if(b.x>W+40){b.x=-40;b.by=H*.12+Math.random()*H*.4;}b._sw=(b._sw||0)+dt;var diveDur=2600,gap=3200;var ph=b._sw%(gap+diveDur);if(ph>gap){var k=(ph-gap)/diveDur;var dive=Math.sin(k*Math.PI);b.y=b.by+dive*(H*.55);}else{b.y=b.by+Math.sin(b.t*2)*10;}}
+
+  // --- ANTI-STRAND CLAMP: never let a bee drift far off-screen (huge dt frames could strand it forever, making the level impossible to clear). Keep every bee reachable. ---
+  var _m=60;
+  if(b.x<-_m){b.x=-_m;if(b.vx<0)b.vx=Math.abs(b.vx)||0.6;}
+  if(b.x>W+_m){b.x=W+_m;if(b.vx>0)b.vx=-(Math.abs(b.vx)||0.6);}
+  if(b.y<-_m){b.y=-_m;if(b.vy<0)b.vy=Math.abs(b.vy)||0.6;}
+  if(b.y>H+_m){b.y=H+_m;if(b.vy>0)b.vy=-(Math.abs(b.vy)||0.6);}
 }
 function moveSnake(s,dt){
   s.t+=dt*.001;const hd=s.segs[0];
@@ -729,6 +736,14 @@ function hitPlayer(){
 function endGame(){GS='over';stopBuzz();stopMusic();setTimeout(()=>{sfx('over');showScr('gos');},300);}
 function checkWinCondition(){
   if(GS!=='play')return;
+  // --- SAFETY NET: once the level's minimum time is up, cull any bee that is unreachable (off-screen/stranded) so the level can never hang. ---
+  if(lvTimer>=lvMinDur){
+    var _culled=false;
+    for(var _i=0;_i<bees.length;_i++){var _b=bees[_i];
+      if(!_b._dead && (_b.x<-30||_b.x>W+30||_b.y<-30||_b.y>H+30)){ _b._dead=true; _culled=true; }
+    }
+    if(_culled){ bees=bees.filter(function(b){return !b._dead;}); }
+  }
   const allBeesGone=bees.filter(b=>!b._dead).length===0;
   const allSnakesGone=snakes.filter(s=>!s._dead).length===0;
   const minDone=lvTimer>=lvMinDur;
