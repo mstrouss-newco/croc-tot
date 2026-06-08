@@ -30,6 +30,8 @@ This game is built to be **reskinned** into a different game without touching th
 
 See **[`TEMPLATE.md`](./TEMPLATE.md)** for the full customization guide.
 
+**Powering a game maker:** the design patterns from this game (the THEME/LVS split, the named enemy movement patterns, power-ups, win conditions and difficulty curve) have been distilled into a reusable mechanics library used by the sibling project **buildable-app** (an AI kids' game generator). See `MECHANICS.md` in that repo. Riley is the proven reference implementation those patterns come from.
+
 ## Build / deploy
 
 No build tooling — `riley/index.html` is a self-contained HTML/JS/CSS file. Committing to `main` deploys automatically to `croctot.com/riley/` (allow ~1 min for the CDN to update; append a `?v=` query string to bust cache when testing).
