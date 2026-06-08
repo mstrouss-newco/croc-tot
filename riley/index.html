@@ -86,7 +86,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="scr" id="ss">
     <div class="be">🌸</div>
     <div class="ttl">Riley's<br>Garden!</div>
-    <div class="sub">Pick flowers & fruit 🌸🍓🍊<br>Your magnet auto-blasts bees! 🐝✨🌈<br>Dodge snakes & the bear! 🐍🐻</div>
+    <div class="sub">Pick flowers & fruit 🌸🍓🍊<br>Your fairy auto-blasts bees! 🐝✨🌈<br>Dodge snakes & the bear! 🐍🐻</div>
     <button class="btn" id="stbtn">Let's Play! 🌟</button>
     <div id="lvsel" style="display:none">
       <div style="font-size:12px;color:rgba(255,255,255,.8);margin-bottom:10px;font-weight:700">Or pick a level:</div>
@@ -539,7 +539,7 @@ let raf,last=0;
 const THEME={
   name:'Riley\'s Garden',                 // shown in <title> / branding
   tagline:'Pick flowers & fruit, dodge the bugs!',
-  hero:{emoji:'\uD83E\uDDF2',label:'magnet'}, // the auto-blasting helper character
+  hero:{emoji:'\uD83E\uDDDA',label:'fairy'}, // the auto-blasting helper character
   // item graphics — the key a future user most often swaps:
   items:{sunflower:'🌻',strawberry:'🍓',apple:'🍎',rose:'🌹',tulip:'🌷',blueberry:'🫐',moonflower:'🌸',grapes:'🍇',orange:'🍊'},
   fruits:['strawberry','apple','blueberry','grapes','orange'], // which items count as edible 'fruit'
@@ -740,7 +740,7 @@ function checkWinCondition(){
   }
   if(bossPending&&bossSpawned&&boss){return;} // boss still alive — keep fighting
   const bossGone=!boss||bossHp<=0;
-  if(allBeesGone&&allSnakesGone&&bossGone&&minDone)finishLevel();
+  if(allBeesGone&&bossGone&&minDone)finishLevel();
 }
 function finishLevel(){GS='lc';stopBuzz();stopMusic();setTimeout(()=>{sfx('lc');const lvBonus=collected*10;$('lcsub').textContent='Level '+(LI+1)+' done! +'+lvBonus+' pts';score+=lvBonus;if(score>hiscore){hiscore=score;localStorage.setItem('riley_hiscore',hiscore);}showScr('lcs');},200);}
 
@@ -994,54 +994,64 @@ function draw(dt){
 function drawEmoji(e,x,y,sz){ctx.save();ctx.font=sz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(e,x,y);ctx.restore();}
 
 function drawFairy(x,y,fr,iv){
-  // Hero is a horseshoe MAGNET. When 'working' (magnet power-up active) a magnetic-pull halo pulses around it.
+  // Hero is a FAIRY. The magnetic-pull halo only appears while the magnet power-up is active (farmerOn).
   if(iv&&Math.floor(Date.now()/80)%2===0)return; // invincibility blink
-  const bob=Math.sin(fr*.18)*2.2, yy=y+bob;
+  const bob=Math.sin(fr*0.18)*2;
+  y+=bob;
   ctx.save();
-  // soft ground shadow
-  ctx.beginPath();ctx.ellipse(x,y+22,13,4,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.18)';ctx.fill();
-  // ── magnetic-pull halo (only while the magnet is actively working) ──
+  // ---- Magnetic-pull halo: ONLY while the magnet power-up is active ----
   if(typeof farmerOn!=='undefined'&&farmerOn){
-    const t=Date.now()*.004;
-    for(let k=0;k<3;k++){
-      const ph=(t+k*0.66)%1; // 0..1 expanding ring
-      const rr=18+ph*((typeof FR!=='undefined'?FR:120)-18);
-      ctx.beginPath();ctx.arc(x,yy,rr,0,Math.PI*2);
-      ctx.strokeStyle='rgba(110,170,255,'+(0.45*(1-ph))+')';
-      ctx.lineWidth=3;ctx.stroke();
+    const t=Date.now()/1000;
+    ctx.save();
+    // radial glow
+    const gg=ctx.createRadialGradient(x,y,4,x,y,42);
+    gg.addColorStop(0,'rgba(110,170,255,0.30)');
+    gg.addColorStop(1,'rgba(110,170,255,0)');
+    ctx.fillStyle=gg;ctx.beginPath();ctx.arc(x,y,42,0,Math.PI*2);ctx.fill();
+    // expanding pull rings
+    for(let i=0;i<3;i++){
+      const ph=((t*1.4)+(i/3))%1;
+      const rr=10+ph*30;
+      ctx.globalAlpha=(1-ph)*0.6;
+      ctx.strokeStyle='#6eaaff';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(x,y,rr,0,Math.PI*2);ctx.stroke();
     }
-    // inner glow
-    const g=ctx.createRadialGradient(x,yy,4,x,yy,34);
-    g.addColorStop(0,'rgba(120,180,255,.30)');g.addColorStop(1,'rgba(120,180,255,0)');
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,yy,34,0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
-  // ── horseshoe magnet body ──
-  ctx.translate(x,yy);
-  const wob=Math.sin(fr*.12)*0.06; ctx.rotate(wob);
-  const Wd=20,Hh=24,th=8; // overall width/height, arm thickness
-  // red U-shape (top arc + two arms)
-  ctx.lineCap='butt';
-  ctx.strokeStyle='#e23b3b';ctx.lineWidth=th;
-  ctx.beginPath();
-  ctx.arc(0,-2,Wd/2,Math.PI,0,false); // top semicircle
-  ctx.moveTo(-Wd/2,-2);ctx.lineTo(-Wd/2,Hh-6); // left arm
-  ctx.moveTo(Wd/2,-2);ctx.lineTo(Wd/2,Hh-6);  // right arm
-  ctx.stroke();
-  // subtle red shading highlight
-  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(0,-2,Wd/2+1,Math.PI,1.5*Math.PI,false);ctx.stroke();
-  // silver pole tips at the bottom of each arm
-  ctx.fillStyle='#d9dde3';
-  ctx.fillRect(-Wd/2-th/2, Hh-8, th, 7);
-  ctx.fillRect( Wd/2-th/2, Hh-8, th, 7);
-  ctx.fillStyle='rgba(255,255,255,.6)';
-  ctx.fillRect(-Wd/2-th/2, Hh-8, th, 2);
-  ctx.fillRect( Wd/2-th/2, Hh-8, th, 2);
-  // tiny eyes to keep it friendly/kid-cute
-  ctx.fillStyle='#fff';
-  ctx.beginPath();ctx.arc(-5,-4,3,0,Math.PI*2);ctx.arc(5,-4,3,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#222';
-  ctx.beginPath();ctx.arc(-5,-4,1.4,0,Math.PI*2);ctx.arc(5,-4,1.4,0,Math.PI*2);ctx.fill();
+  // ---- Fairy sparkle aura (always, subtle) ----
+  ctx.globalAlpha=0.5;
+  for(let i=0;i<5;i++){
+    const a=fr*0.05+i*(Math.PI*2/5);
+    const sx=x+Math.cos(a)*16,sy=y+Math.sin(a)*16;
+    ctx.fillStyle=['#ffd1f0','#fff3a0','#bfe9ff','#d6b8ff','#c7ffd1'][i];
+    ctx.beginPath();ctx.arc(sx,sy,1.8,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // ---- Wings ----
+  const wf=Math.sin(fr*0.4)*0.5+1;
+  ctx.fillStyle='rgba(190,230,255,0.75)';
+  ctx.strokeStyle='rgba(120,180,240,0.9)';ctx.lineWidth=1;
+  ctx.save();ctx.translate(x,y-2);
+  ctx.beginPath();ctx.ellipse(-9,-2,6,11*wf,-0.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(9,-2,6,11*wf,0.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.restore();
+  // ---- Body (dress) ----
+  ctx.fillStyle='#ff7eb6';
+  ctx.beginPath();ctx.moveTo(x,y-2);ctx.lineTo(x-9,y+16);ctx.lineTo(x+9,y+16);ctx.closePath();ctx.fill();
+  // ---- Head ----
+  ctx.fillStyle='#ffe0b8';
+  ctx.beginPath();ctx.arc(x,y-8,7,0,Math.PI*2);ctx.fill();
+  // hair
+  ctx.fillStyle='#7a4b22';
+  ctx.beginPath();ctx.arc(x,y-11,7,Math.PI,Math.PI*2);ctx.fill();
+  // eyes
+  ctx.fillStyle='#3a2a1a';
+  ctx.beginPath();ctx.arc(x-2.5,y-8,1,0,Math.PI*2);ctx.arc(x+2.5,y-8,1,0,Math.PI*2);ctx.fill();
+  // ---- Wand ----
+  ctx.strokeStyle='#caa14a';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(x+7,y+2);ctx.lineTo(x+14,y-6);ctx.stroke();
+  ctx.fillStyle='#fff3a0';
+  ctx.beginPath();ctx.arc(x+14,y-6,2.4,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
 
