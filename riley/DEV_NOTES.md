@@ -25,11 +25,20 @@
 - Batch all changes in a single `dispatch()` call with a `changes` array
 
 ## Pending / To Do
-- [ ] Upload `riley/sounds/music-1v3.mp3`, `music-1v4.mp3`, `music-1v5.mp3` to replace synth fallback for Lv3–5
+- [x] Lv3–5 real music wired (2026-06-08): `music-1v3.mp3`, `music-1v4.mp3` present; Lv5 uses `music-lv5.mp3` (the uploaded filename). Optional: rename `music-lv5.mp3` → `music-1v5.mp3` for naming consistency and update the `realTracks` entry to match.
 - [ ] Verify welcome clip sounds correct on real device (Riley's voice)
 - [ ] Clean up empty `riley/sounds/boss/` subfolder (unused)
 
 ## Session Log
+
+### 2026-06-08 — magnet hero, boss-at-end, 30s levels, Lv3-5 music
+- **Hero is now a MAGNET.** Rewrote `drawFairy(x,y,fr,iv)` to draw a red horseshoe magnet (silver pole tips, friendly eyes) instead of the fairy. While the magnet power-up is active (`farmerOn`), an animated **magnetic-pull halo** (3 expanding blue rings + radial glow) pulses around the sprite. Set `THEME.hero` to the magnet emoji/label. Disabled the now-redundant separate `drawFarmer` overlay call and recoloured the pull-range ring blue (`#6eaaff`). Updated the intro subtitle text from "The fairy auto-blasts bees" to "Your magnet auto-blasts bees". Note: the projectile weapon is still called "Fairy Dust" (a separate game element, left unchanged).
+- **Bear boss now appears at the END of Lv5, not the start.** Removed `if(lv.bearBoss)spawnBoss(gh)` from `buildLv()` (it spawned the bear immediately). Added `bossPending/bossSpawned/bossWarned` state. In `checkWinCondition()`: on a boss level the bear is spawned once `lvTimer>=lvMinDur`, with a "Bear is coming!" warning ~3s before; the level will NOT finish while the boss is pending or alive — you must beat the bear to win. Made the time-up auto-clear and the `lvMinDur+8000` failsafe boss-aware (`_failAt = bossPending ? lvMinDur+35000 : lvMinDur+8000`) and added `&&!bossPending` to the all-cleared finish check, so the bear fight (≈15-30s, HP 15) isn't cut short.
+- **Levels are now 30s.** Set `minDur:30000` on all 5 levels (were 30/33/36/40/45s). Boss level = 30s of survival, then the bear fight.
+- **Music for Lv3-5 wired up.** Extended `realTracks` from 2 to 5 entries: `sounds/music-1v1.mp3` … `music-1v4.mp3`, and `sounds/music-lv5.mp3` for Lv5 (kept the on-disk `lv5` filename rather than the `1v` convention so it matches the uploaded file — the previous code only listed 2 tracks so Lv3-5 fell back to synth). `startMusic(LI)` indexes `realTracks[LI]`, so each level now plays its real track; boss music (`boss.mp3`) still triggers on bear spawn.
+- **Per-level variety confirmed:** distinct movement patterns linear/patrol/random/swoop/swirl across Lv1-5, plus distinct environments (clear / orchard+respawn / rain+wind / night+stars+ghost-bees / bear boss) and enemies (bee/beetle/crow/bat/bee+bear).
+- QA: tested on the deployed site (croctot.com/riley/?v=). Verified Lv5 has `boss===null` at start, the bear spawns exactly at lvTimer=30000, the level stays in play while the boss is alive, and finishes (`GS='lc'`) only after the boss is killed. Magnet + halo render confirmed on screen. Audio can't be auto-verified (needs a real tap) — confirm Lv3-5 + boss music on a real device.
+- Commits: 1b02e3c (main update), e1d29b6 (intro text).
 
 ### 2026-06-07 (later) — new enemy challenge + template foundation
 - **Lv4 dive-bombing bats:** added a new `swoop` movement pattern to `moveBee()` (drifts across, then periodically dives toward the player's row and climbs back). Switched Lv4 `bp:'zigzag'` → `bp:'swoop'` and updated its tip. Verified live on Lv4 (bat y-positions sweep top↔bottom).
