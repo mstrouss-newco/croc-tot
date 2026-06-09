@@ -683,6 +683,11 @@ function updateBoss(dt){
   boss.stompT+=dt;
   if(boss.stompT>3200){boss.stompT=0;stompWaves.push({x:boss.x,y:boss.y,r:10,alpha:1});}
   if(bossHitCool<=0&&D(PL.x,PL.y,boss.x,boss.y)<52){bossHitCool=1400;hitPlayer();}
+  /* HARD ON-SCREEN CLAMP for the boss: it must never charge off the playfield */
+  if(boss.x<40){boss.x=40;if(boss.vx<0)boss.vx=Math.abs(boss.vx)||1;}
+  if(boss.x>W-40){boss.x=W-40;if(boss.vx>0)boss.vx=-(Math.abs(boss.vx)||1);}
+  if(boss.y<60)boss.y=60;
+  var _bf=H-GH()-30; if(boss.y>_bf)boss.y=_bf;
   updHUD();
 }
 
@@ -725,6 +730,11 @@ function moveBee(b,dt){
   if(b.x>W+_m){b.x=W+_m;if(b.vx>0)b.vx=-(Math.abs(b.vx)||0.6);}
   if(b.y<-_m){b.y=-_m;if(b.vy<0)b.vy=Math.abs(b.vy)||0.6;}
   if(b.y>H+_m){b.y=H+_m;if(b.vy>0)b.vy=-(Math.abs(b.vy)||0.6);}
+  /* HARD ON-SCREEN CLAMP: no bad guy may ever leave the visible play area */
+  if(b.x<24){b.x=24;if(b.vx<0)b.vx=Math.abs(b.vx)||0.6;}
+  if(b.x>W-24){b.x=W-24;if(b.vx>0)b.vx=-(Math.abs(b.vx)||0.6);}
+  if(b.y<40){b.y=40;if(b.vy<0)b.vy=Math.abs(b.vy)||0.6;}
+  var _floor=H-GH()-20; if(b.y>_floor){b.y=_floor;if(b.vy>0)b.vy=-(Math.abs(b.vy)||0.6);}
 }
 function moveSnake(s,dt){
   s.t+=dt*.001;const hd=s.segs[0];
@@ -872,7 +882,7 @@ function loop(ts){
       else sfx(it.t==='orange'?'orange':isFr?'fruit':'flower');
       if(isFr){glitterBurst(it.x,it.y,'#ff44bb','#ffe066',10,false);pop(it.x,it.y,'🍓 +POWER!','#ff44bb');}
       else{glitterBurst(it.x,it.y,'#88ffcc','#ffe066',5);pop(it.x,it.y,'+10','#ffe066');}
-      if(!farmerOn&&fruitGot>=FNEED){farmerOn=true;farmerT=FDUR;sfx('farmer');show('fbar');$('fbar').classList.add('on');}
+      if(!farmerOn&&fruitGot>=FNEED){farmerOn=true;farmerT=FDUR;show('fbar');$('fbar').classList.add('on');}
       checkWepUnlock();updHUD();
       checkWinCondition();
       if(items.every(i=>i.col)&&!allItemsHintShown){
