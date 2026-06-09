@@ -551,31 +551,31 @@ const LVS=[
   // Lv1: 3 bees 1 snake — defeat them all to advance, collect fruit for power-ups
   {id:1,nm:'Sunny Garden',    bgT:'#87CEEB',bgB:'#c8f5a0',gc:'#6dbf4f',gr:'#5aad3f',
    items:[{t:'sunflower',n:3},{t:'strawberry',n:3},{t:'orange',n:2}],
-   bees:3,bs:.7,bp:'linear',snk:1,ss:.6,minDur:30000,waveEvery:11000,
+   bees:3,bs:.7,bp:'linear',snk:1,ss:.6,beesRespawn:3,minDur:30000,waveEvery:3500,
    enemy:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#e0f7ff'},
    tip:'Blast all bees & snakes! Collect fruit for weapons!'},
   // Lv2: 4 bees 2 snakes, patrol + faster, bees respawn once
   {id:2,nm:'Apple Orchard',   bgT:'#b3e5fc',bgB:'#d4f5b0',gc:'#7cba5a',gr:'#6aaa48',
    items:[{t:'apple',n:4},{t:'rose',n:3},{t:'orange',n:3}],
-   bees:4,bs:1.1,bp:'patrol',snk:2,ss:.9,beesRespawn:2,minDur:30000,waveEvery:10000,
+   bees:4,bs:1.1,bp:'patrol',snk:2,ss:.9,beesRespawn:3,minDur:30000,waveEvery:3500,
    enemy:{nm:'beetle',em:'🪲',mad:'🐞',wing:1,wc:'#3a2a1a'},
    tip:'Beetles patrol the orchard — grab fruit fast!'},
   // Lv3: 5 bees 2 snakes, random + wind, rain
   {id:3,nm:'Rainy Garden',    bgT:'#78909c',bgB:'#b0bec5',gc:'#5d8a4e',gr:'#4e7a40',
    items:[{t:'tulip',n:4},{t:'blueberry',n:4},{t:'orange',n:3}],
-   bees:5,bs:1.25,bp:'random',snk:2,ss:1.1,rain:true,wind:.4,beesRespawn:2,minDur:30000,waveEvery:9000,
+   bees:5,bs:1.25,bp:'random',snk:2,ss:1.1,rain:true,wind:.4,beesRespawn:3,minDur:30000,waveEvery:3500,
    enemy:{nm:'crow',em:'🐦',mad:'🕊️',wing:0,wc:'#444'},
    tip:'Stormy crows swoop in the wind & rain!'},
   // Lv4: 6 bees 3 snakes, zigzag + 2 ghost bees, night
   {id:4,nm:'Nighttime Garden',bgT:'#0d1b4b',bgB:'#1a3a6e',gc:'#1a4a2e',gr:'#123820',
    items:[{t:'moonflower',n:4},{t:'grapes',n:4},{t:'orange',n:3}],
-   bees:5,bs:1.35,bp:'swoop',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:1,minDur:30000,waveEvery:9000,
+   bees:5,bs:1.35,bp:'swoop',snk:3,ss:1.2,night:true,stars:40,ghostBees:3,beesRespawn:3,minDur:30000,waveEvery:3500,
    enemy:{nm:'bat',em:'🦇',mad:'🦇',wing:0,wc:'#5a3a6a'},
    tip:'Dive-bombing bats swoop from the dark — keep moving!'},
   // Lv5: 7 bees 3 snakes + bear boss, swirl, harder everything
   {id:5,nm:'The Big Beehive!',bgT:'#ff8c00',bgB:'#ffe066',gc:'#8b6914',gr:'#7a5c10',
    items:[{t:'sunflower',n:3},{t:'strawberry',n:3},{t:'apple',n:3},{t:'orange',n:3},{t:'rose',n:2}],
-   bees:7,bs:1.6,bp:'swirl',snk:3,ss:1.4,bearBoss:true,beesRespawn:2,minDur:30000,waveEvery:8000,
+   bees:7,bs:1.6,bp:'swirl',snk:3,ss:1.4,bearBoss:true,beesRespawn:3,minDur:30000,waveEvery:3500,
    enemy:{nm:'bee',em:'🐝',mad:'😡',wing:1,wc:'#ffe066'},
    tip:'Kill the Bear Boss to win!'}
 ];
@@ -611,7 +611,7 @@ function updHUD(){
   }
   if(farmerOn){show('fbar');$('fbar').classList.add('on');$('flbl').textContent='🧲 Magnet!';$('fff').style.width=(farmerT/FDUR*100)+'%';}
   else{const p=Math.min(100,(fruitGot/FNEED)*100);if(p>0&&p<100){show('fbar');$('fbar').classList.add('on');$('flbl').textContent='🍎 Farmer?';$('fff').style.width=p+'%';}else $('fbar').classList.remove('on');}
-  if(boss){show('bbar');$('bbar').classList.add('on');$('bbhp').style.width=(bossHp/bossMaxHp*100)+'%';}
+  if(boss){show('bbar');$('bbar').classList.add('on');$('bbhp').style.width=(bossHp/bossMaxHp*100)+'%';if($('bblbl'))$('bblbl').textContent=boss.mini?((boss.em||'\uD83D\uDC51')+' MINIBOSS!'):'\uD83D\uDC3B BEAR BOSS!';}
   else $('bbar').classList.remove('on');
 }
 function toast(id,dur){const t=$(id);t.classList.add('on');setTimeout(()=>t.classList.remove('on'),dur||2200);}
@@ -662,9 +662,12 @@ function buildLv(){
 
 // ── Boss ──────────────────────────────────────────────────────
 function spawnBoss(gh){
-  var _bh=(LVS[LI]&&LVS[LI].bearBoss)?15:8; // miniboss: lighter than the bear
+  var _isBear=!!(LVS[LI]&&LVS[LI].bearBoss);
+  var _bh=_isBear?15:8; // miniboss: lighter than the bear
+  var _em=(LVS[LI]&&LVS[LI].enemy)?LVS[LI].enemy.em:THEME.enemyFallback.em;
+  var _wc=(LVS[LI]&&LVS[LI].enemy&&LVS[LI].enemy.wc)?LVS[LI].enemy.wc:'#ffe066';
   bossMaxHp=_bh;bossHp=_bh;bossHitCool=0;
-  boss={x:W/2,y:H-gh-70,vx:1.3,vy:0,t:0,angry:false,charge:false,chargeT:0,stompT:0};
+  boss={x:W/2,y:H-gh-70,vx:1.3,vy:0,t:0,angry:false,charge:false,chargeT:0,stompT:0,mini:!_isBear,em:_em,wc:_wc};
   setTimeout(()=>sfx('bosshit'),500);
 startBossMusic();
 }
@@ -763,7 +766,10 @@ function checkWinCondition(){
   }
   if(bossPending&&bossSpawned&&boss){return;} // boss still alive — keep fighting
   const bossGone=!boss||bossHp<=0;
-  if(allBeesGone&&bossGone&&minDone)finishLevel();
+  // Once the (mini)boss has been spawned AND beaten, end the level right away
+  // (no need to wait out the minimum duration). Otherwise keep the normal clear+time rule.
+  if(bossSpawned&&bossGone)finishLevel();
+  else if(allBeesGone&&bossGone&&minDone)finishLevel();
 }
 function finishLevel(){GS='lc';stopBuzz();stopMusic();setTimeout(()=>{sfx('lc');const lvBonus=collected*10;$('lcsub').textContent='Level '+(LI+1)+' done! +'+lvBonus+' pts';score+=lvBonus;if(score>hiscore){hiscore=score;localStorage.setItem('riley_hiscore',hiscore);}showScr('lcs');},200);}
 
@@ -1109,8 +1115,31 @@ function drawFarmer(px,py){
   ctx.restore();
 }
 
+function drawMiniBoss(b){
+  // A miniboss = a GIANT version of the level's bad guy, with an angry glow + crown.
+  const hpPct=Math.max(0,bossHp)/bossMaxHp;
+  ctx.save();ctx.translate(b.x,b.y);
+  const sc=1+Math.sin(b.t*2)*0.04,pulse=b.angry?1.12:1;ctx.scale(sc*pulse,sc*pulse);
+  // ground shadow
+  ctx.beginPath();ctx.ellipse(0,46,40,11,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fill();
+  // angry aura ring
+  const aura=ctx.createRadialGradient(0,0,8,0,0,60);aura.addColorStop(0,(b.wc||'#ffcc00')+'cc');aura.addColorStop(1,'rgba(255,80,80,0)');
+  ctx.beginPath();ctx.arc(0,0,58,0,Math.PI*2);ctx.fillStyle=aura;ctx.fill();
+  // the giant bad-guy emoji
+  ctx.font='72px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.em||'\uD83D\uDC1D',0,0);
+  // crown to read as a boss
+  ctx.font='30px serif';ctx.fillText('\uD83D\uDC51',0,-46);
+  ctx.restore();
+  // floating HP bar above the miniboss
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.roundRect(b.x-32,b.y-66,64,9,4);ctx.fill();
+  ctx.fillStyle=hpPct>0.4?'#5ad06a':(hpPct>0.18?'#ffb84d':'#ff5a5a');
+  ctx.beginPath();ctx.roundRect(b.x-30,b.y-64,60*hpPct,5,3);ctx.fill();
+  ctx.restore();
+}
 function drawBoss(){
   const b=boss;if(!b)return;
+  if(b.mini){drawMiniBoss(b);return;}
   ctx.save();ctx.translate(b.x,b.y);
   const sc=1+Math.sin(b.t*2)*.03,pulse=b.angry?1.1:1;ctx.scale(sc*pulse,sc*pulse);
   ctx.beginPath();ctx.ellipse(0,45,38,10,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fill();
