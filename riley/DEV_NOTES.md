@@ -1,5 +1,27 @@
 # Riley's Garden — Dev Notes
 
+## Kill-count → miniboss → level-end mechanic (2026-06-09)
+
+This is the deterministic level-end mechanic. Implementation map in `riley/index.html`:
+
+- **State:** `kills` and `killGoal` (default `15`) are globals declared on the boss-state line (`let ...,kills=0,killGoal=15,bossPending=false,bossSpawned=false...`).
+- **Counting:** `kills++` runs at the END of `killBee(i,x,y)` — the single chokepoint where any bad guy dies. Snakes are dodge-only and intentionally don’t count.
+- **Reset:** `kills=0` in `buildLv()` (and `startLv()` rebuilds the level), so each level starts fresh.
+- **Arming the boss on every level:** in `buildLv()` the level now sets `bossPending=true` for ALL levels (previously only `lv.bearBoss` did). `lv.bearBoss` still distinguishes the Lv5 bear from the Lv1–Lv4 minibosses.
+- **Spawn trigger:** in `checkWinCondition()`, the boss spawns when `kills>=killGoal` OR (as a safety fallback) `minDone && lvTimer>=lvMinDur+8000`. The warning/announcement pops are miniboss-aware (`LVS[LI].bearBoss ? 'BEAR' : 'MINIBOSS'`).
+- **Boss HP:** `spawnBoss()` scales HP — `LVS[LI].bearBoss ? 15 : 8` (bear vs. miniboss).
+- **Defeat → end:** `hitBossWep(dmg)` sets `boss=null` when `bossHp<=0`; `checkWinCondition()` then finishes the level once `allBeesGone && bossGone && minDone`.
+
+### Gotcha that bit us (and how QA caught it)
+`lv` is a **local `const` inside `buildLv()` only** — it is NOT a global. The first version referenced `lv.bearBoss` inside `checkWinCondition()` and `spawnBoss()`, which threw `ReferenceError: lv is not defined` every frame and made levels unwinnable. **Always use `LVS[LI]` to read the current level config outside `buildLv()`.** This was caught immediately by `riley/qa-harness.html` (drives the real loop across all 5 levels and asserts each reaches the level-complete state), not by a player.
+
+### Tuning knobs
+- `killGoal` (boss-state line) — kills needed before the miniboss (currently 15).
+- `spawnBoss()` HP values — miniboss `8`, bear `15`.
+- The `lvMinDur+8000` fallback — lower it if you want the boss to never depend on the timer.
+- Per-level enemy counts / `beesRespawn` / `waveEvery` in `LVS` — raise enemy throughput so 15 kills is reached before the time fallback on early levels.
+
+
 ## Repository
 - Repo: mstrouss-newco/croc-tot
 - Riley's game lives entirely in: `riley/index.html` + `riley/sounds/`
