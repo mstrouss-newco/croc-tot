@@ -1,5 +1,17 @@
 # Riley's Garden — Dev Notes
 
+## Boss "straight-line glitch" fix — runaway velocity (2026-06-09)
+
+**Bug (reported):** After the on-screen clamp, the boss didn't move naturally — it "glitched around the screen in a straight line."
+
+**Root cause:** A pre-existing runaway-velocity bug that the new clamp exposed. `updateBoss()` had two rage speed-up lines that multiply the boss's horizontal velocity as its HP drops: `if(bossHp<=10&&boss.vx<2.2)boss.vx*=1.4;` and `if(bossHp<=5&&boss.vx<3.5)boss.vx*=1.3;`. These tested the **signed** `vx`. After the boss bounces off a wall its `vx` goes negative, and a negative number is always `< 2.2` / `< 3.5`, so the speed-up multiplied it **every single frame** — compounding to ~1e+28. The boss then teleported across the screen each frame and slammed into the clamp, producing the straight-line glitch. (The old code happened to mostly hide this; the tighter clamp + extra bounce made bounces frequent enough to trigger it constantly.)
+
+**Fix (commit `b01b73a`):**
+- Rewrote the rage speed-up to operate on **speed magnitude** while preserving direction, ramping toward a capped target instead of multiplying unboundedly: `var _bdir=boss.vx<0?-1:1, _bspd=Math.abs(boss.vx), _btgt=1.3;` → `_btgt` becomes 2.0 at HP≤10 and 2.8 at HP≤5 → `if(_bspd<_btgt)_bspd=Math.min(_btgt,_bspd*1.05+0.02); boss.vx=_bdir*_bspd;`
+- Replaced the boss clamp with a **position-only safety net** that no longer re-flips `vx` (the normal-move block already bounces at `[60, W-60]`; flipping again caused the stutter), plus a hard `|vx|<=6` cap as a backstop.
+
+**Verification (live):** Drove 400 frames dropping HP through both rage tiers → max |vx| = 2.8 (capped, was ~1e+28), 0 off-screen frames, smooth drift + bob + wall-bounce. Drove 500 frames of continuous charging into all 4 corners → max |vx| = 2.8, 0 off-screen frames, natural pursuit. NOTE: requestAnimationFrame pauses while the automation tab is backgrounded, so live motion must be checked by driving `updateBoss(dt)` manually or with the tab focused.
+
 ## Off-screen enemies/boss + magnet sound fix (2026-06-09)
 
 **Bug (reported with screenshots):** Bad guys wandered off the visible play area leaving the screen empty, and when the boss finally appeared it charged straight off-screen too. The magnet ("farmer") power-up also played an annoying activation sound.
