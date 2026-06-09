@@ -22,6 +22,18 @@ This is the deterministic level-end mechanic. Implementation map in `riley/index
 - Per-level enemy counts / `beesRespawn` / `waveEvery` in `LVS` — raise enemy throughput so 15 kills is reached before the time fallback on early levels.
 
 
+
+### Miniboss visuals, instant level-end & wave tuning (2026-06-09)
+
+Three refinements on top of the base mechanic:
+
+- **Distinct miniboss sprite.** `spawnBoss()` now tags the boss object with `mini` (true for Lv1–Lv4) and `em`/`wc` from `LVS[LI].enemy`. `drawBoss()` early-returns into a new **`drawMiniBoss(b)`** helper when `b.mini` is set, which draws a giant `b.em` emoji + a 👑 crown + an angry radial aura + a floating HP bar (canvas `roundRect`). The elaborate hand-drawn bear vector art in `drawBoss()` is untouched and used only for the Lv5 bear. The HP-bar label (`#bblbl`) is set in `updHUD()` to `boss.mini ? em+' MINIBOSS!' : '🐻 BEAR BOSS!'`.
+- **Instant level-end on boss defeat.** `checkWinCondition()` now does `if(bossSpawned && bossGone) finishLevel();` so beating the (mini)boss ends the level immediately, without waiting out `lvMinDur`. The old `allBeesGone && bossGone && minDone` rule is the fallback for the pre-boss phase.
+- **Wave tuning.** Waves spawn every `waveEvery` ms for the whole `lvMinDur`; with the old 8–11s spacing you couldn’t reach 15 kills in 30s. Set `waveEvery:3500` and `beesRespawn:3` on all levels so the kill-count path (not the time fallback) is the primary boss trigger.
+
+### Another scoping gotcha (QA harness edition)
+`LI` (current level index) is **closure-scoped**, like `lv` — you can’t set it from outside via `window.LI`. To drive a specific level (in the QA harness or the console) call the game’s own **`startGame(idx)`**, which sets `LI` and builds the level. The QA harness was briefly reporting every boss as Lv1’s bee because it set `window.lvIdx` instead; fixed to use `startGame(idx)`, and it now also asserts the miniboss emoji matches `LVS[idx].enemy.em` and that Lv5 is the bear.
+
 ## Repository
 - Repo: mstrouss-newco/croc-tot
 - Riley's game lives entirely in: `riley/index.html` + `riley/sounds/`
