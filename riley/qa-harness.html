@@ -92,10 +92,11 @@ async function gotoLevel(idx){
   const w=win();
   // Best-effort: use the game's own start hooks if present, else set state directly.
   try{
-    if(typeof w.startGame==='function') w.startGame();
-    if('lvIdx' in w) w.lvIdx=idx;
-    if(typeof w.buildLv==='function') w.buildLv();
-    if('GS' in w) w.GS='play';
+    // IMPORTANT: the game's current-level var (LI) is closure-scoped — you CANNOT set it
+    // from outside (window.LI is a different property the game ignores). Use the game's own
+    // level-setter startGame(idx), which sets LI and builds the level.
+    if(typeof w.startGame==='function') w.startGame(idx);
+    else if(typeof w.startLv==='function'){ w.startLv(); }
     if('lvTimer' in w) w.lvTimer=0;
     if('kills' in w) w.kills=0;
   }catch(e){ line('setup warn: '+e.message); }
@@ -143,7 +144,7 @@ async function runLevel(idx){
     const ib=enemiesInBounds(w);
     if(!ib.ok){ res.inBounds=false; res.worstX=ib.x; }
     if((w.kills||0)>=(w.killGoal||15)) res.sawKillGoal=true;
-    if(w.boss) res.sawBoss=true;
+    if(w.boss){ res.sawBoss=true; if(res.bossEm===undefined){ res.bossEm=w.boss.em; res.bossMini=w.boss.mini; } }
 
     // ended? GS leaves 'play', or a win/levelup screen flag flips.
     if(w.GS && w.GS!=='play' && w.GS!==startGS){ res.ended=true; break; }
@@ -158,6 +159,9 @@ async function runLevel(idx){
   p&=assert(res.inBounds, name+' enemies stay in-bounds', res.inBounds?'':'stray enemy at x='+res.worstX);
   p&=assert(res.sawKillGoal, name+' kill counter reached killGoal('+(w.killGoal)+')');
   p&=assert(res.sawBoss, name+' miniboss/boss spawned');
+  const lvCfg=w.LVS[idx]||{}; const expectEm=(lvCfg.enemy&&lvCfg.enemy.em)||'';
+  if(lvCfg.bearBoss){ p&=assert(res.bossMini===false, name+' final boss is the BEAR (not a miniboss)'); }
+  else { p&=assert(res.bossMini===true && res.bossEm===expectEm, name+' miniboss matches level enemy', 'got '+res.bossEm+' expected '+expectEm); }
   p&=assert(res.ended, name+' reached level-complete', 'at ~'+(res.t/1000).toFixed(1)+'s of game time');
   p&=assert(res.t<cap, name+' did not overrun hard cap', (cap/1000)+'s cap');
   return {pass:!!p, t:res.t};
@@ -179,7 +183,7 @@ async function runAll(){
 }
 
 document.getElementById('run').onclick=runAll;
-document.getElementById('runOne').onclick=async()=>{ LOG.innerHTML=''; const i=(win().lvIdx)||0; await runLevel(i); };
+document.getElementById('runOne').onclick=async()=>{ LOG.innerHTML=''; const i=(win().LI)||0; await runLevel(i); };
 </script>
 </body>
 </html>
