@@ -500,6 +500,7 @@ function killBee(i,x,y){
   pop(bees[i].x,bees[i].y,'+15🐝','#ffe066');
   sfx('beekill');
   checkWepUnlock();updHUD();
+  kills++; // KILL-COUNT MECHANIC: 15 bad guys -> miniboss
 }
 function killSnake(i){
   if(i<0||i>=snakes.length||snakes[i]._dead)return;
@@ -525,7 +526,7 @@ let _timesUpHinted=false;
 let combo=0,comboT=0,collected=0,total=0,fruitGot=0;
 let farmerOn=false,farmerT=0;
 const FNEED=5,FDUR=13000,FR=110;
-let boss=null,bossHp=0,bossMaxHp=0,bossHitCool=0,bossPending=false,bossSpawned=false,bossWarned=false;
+let boss=null,bossHp=0,bossMaxHp=0,bossHitCool=0,kills=0,killGoal=15,bossPending=false,bossSpawned=false,bossWarned=false;
 let PL={x:80,y:200,w:44,h:52,tx:80,ty:200,spd:3.2,f:0,ft:0};
 let items=[],bees=[],snakes=[],parts=[],pops=[],rainD=[],stars=[],clouds=[],stompWaves=[];
 let raf,last=0;
@@ -653,7 +654,7 @@ function buildLv(){
   for(let i=0;i<7;i++)clouds.push({x:Math.random()*W,y:20+Math.random()*(H*.22),s:.6+Math.random()*.8,vx:.15+Math.random()*.2});
   if(lv.night)for(let i=0;i<(lv.stars||35);i++)stars.push({x:Math.random()*W,y:Math.random()*(H*.6),r:.8+Math.random()*2,t:Math.random()*Math.PI*2});
   if(lv.rain)for(let i=0;i<70;i++)rainD.push({x:Math.random()*W,y:Math.random()*H,vy:6+Math.random()*4,len:12});
-  if(lv.bearBoss){bossPending=true;bossSpawned=false;}else{bossPending=false;bossSpawned=false;}
+  kills=0; bossPending=true; bossSpawned=false; if(lv.bearBoss){bossPending=true;bossSpawned=false;}else{bossPending=true;bossSpawned=false;}
   $('lce').textContent=['🌻','🍎','🌈','⭐','🏆'][LI]||'🌟';
   $('nxbtn').textContent=LI>=LVS.length-1?'🏆 Finish!':'Next Level ➡️';
   updHUD();updWepBar();
@@ -661,7 +662,8 @@ function buildLv(){
 
 // ── Boss ──────────────────────────────────────────────────────
 function spawnBoss(gh){
-  bossMaxHp=15;bossHp=15;bossHitCool=0;
+  var _bh=(typeof lv!=='undefined'&&lv&&lv.bearBoss)?15:8; // miniboss: lighter than the bear
+  bossMaxHp=_bh;bossHp=_bh;bossHitCool=0;
   boss={x:W/2,y:H-gh-70,vx:1.3,vy:0,t:0,angry:false,charge:false,chargeT:0,stompT:0};
   setTimeout(()=>sfx('bosshit'),500);
 startBossMusic();
@@ -755,8 +757,8 @@ function checkWinCondition(){
   const minDone=lvTimer>=lvMinDur;
   // ── Deferred boss: the bear appears only AFTER you survive the level, then must be beaten ──
   if(bossPending&&!bossSpawned){
-    if(!bossWarned&&lvTimer>=lvMinDur-3000){bossWarned=true;pop(W/2,H*.30,'\uD83D\uDC3B The Bear is coming!','#ff5a5a');sfx('bosshit');}
-    if(minDone){bossSpawned=true;spawnBoss(GH());pop(W/2,H*.30,'\uD83D\uDC3B BEAR BOSS!','#ff3344');}
+    if(!bossWarned&&(kills>=killGoal-3||lvTimer>=lvMinDur-3000)){bossWarned=true;pop(W/2,H*.30,(lv.bearBoss?'\uD83D\uDC3B The Bear is coming!':'\u26A0\uFE0F Miniboss incoming!'),'#ff5a5a');sfx('bosshit');}
+    if(kills>=killGoal||(minDone&&lvTimer>=lvMinDur+8000)){bossSpawned=true;spawnBoss(GH());pop(W/2,H*.30,(lv.bearBoss?'\uD83D\uDC3B BEAR BOSS!':'\uD83D\uDC51 MINIBOSS!'),'#ff3344');}
     return; // don't finish while the boss is still due to appear
   }
   if(bossPending&&bossSpawned&&boss){return;} // boss still alive — keep fighting
