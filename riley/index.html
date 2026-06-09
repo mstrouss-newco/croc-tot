@@ -662,7 +662,7 @@ function buildLv(){
 
 // ── Boss ──────────────────────────────────────────────────────
 function spawnBoss(gh){
-  var _bh=(typeof lv!=='undefined'&&lv&&lv.bearBoss)?15:8; // miniboss: lighter than the bear
+  var _bh=(LVS[LI]&&LVS[LI].bearBoss)?15:8; // miniboss: lighter than the bear
   bossMaxHp=_bh;bossHp=_bh;bossHitCool=0;
   boss={x:W/2,y:H-gh-70,vx:1.3,vy:0,t:0,angry:false,charge:false,chargeT:0,stompT:0};
   setTimeout(()=>sfx('bosshit'),500);
@@ -757,8 +757,8 @@ function checkWinCondition(){
   const minDone=lvTimer>=lvMinDur;
   // ── Deferred boss: the bear appears only AFTER you survive the level, then must be beaten ──
   if(bossPending&&!bossSpawned){
-    if(!bossWarned&&(kills>=killGoal-3||lvTimer>=lvMinDur-3000)){bossWarned=true;pop(W/2,H*.30,(lv.bearBoss?'\uD83D\uDC3B The Bear is coming!':'\u26A0\uFE0F Miniboss incoming!'),'#ff5a5a');sfx('bosshit');}
-    if(kills>=killGoal||(minDone&&lvTimer>=lvMinDur+8000)){bossSpawned=true;spawnBoss(GH());pop(W/2,H*.30,(lv.bearBoss?'\uD83D\uDC3B BEAR BOSS!':'\uD83D\uDC51 MINIBOSS!'),'#ff3344');}
+    if(!bossWarned&&(kills>=killGoal-3||lvTimer>=lvMinDur-3000)){bossWarned=true;pop(W/2,H*.30,(LVS[LI].bearBoss?'\uD83D\uDC3B The Bear is coming!':'\u26A0\uFE0F Miniboss incoming!'),'#ff5a5a');sfx('bosshit');}
+    if(kills>=killGoal||(minDone&&lvTimer>=lvMinDur+8000)){bossSpawned=true;spawnBoss(GH());pop(W/2,H*.30,(LVS[LI].bearBoss?'\uD83D\uDC3B BEAR BOSS!':'\uD83D\uDC51 MINIBOSS!'),'#ff3344');}
     return; // don't finish while the boss is still due to appear
   }
   if(bossPending&&bossSpawned&&boss){return;} // boss still alive — keep fighting
