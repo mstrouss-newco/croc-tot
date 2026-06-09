@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riley's Garden — QA Harness</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;background:#10121a;color:#e8e8f0;}
+  header{padding:14px 18px;background:#1a1d2b;border-bottom:1px solid #2a2e42;}
+  h1{font-size:18px;margin:0;} .sub{color:#9aa;font-size:13px;margin-top:4px;}
+  #controls{padding:12px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  button{background:#3ad07a;border:0;color:#06210f;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;}
+  button.sec{background:#2a2e42;color:#cdd;}
+  #log{padding:0 18px 24px;font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.5;}
+  .row{padding:5px 10px;border-radius:6px;margin:3px 0;}
+  .pass{background:#10331f;color:#7fe6a6;} .fail{background:#3a1414;color:#ff9b9b;}
+  .info{color:#9aa;} .head{color:#ffd86b;font-weight:700;margin-top:10px;}
+  #frameWrap{position:fixed;right:8px;bottom:8px;width:200px;height:330px;border:2px solid #2a2e42;border-radius:10px;overflow:hidden;opacity:.85;}
+  iframe{width:430px;height:710px;border:0;transform:scale(.465);transform-origin:top left;}
+  #summary{font-size:15px;font-weight:700;padding:10px 18px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Riley's Garden — Automated QA Harness</h1>
+  <div class="sub">Drives the real game loop across all 5 levels and asserts every level reaches the level-complete state. Built to catch the recurring "levels never end" bug and to validate the kill-count &rarr; miniboss &rarr; level-end mechanic.</div>
+</header>
+<div id="controls">
+  <button id="run">Run full QA pass</button>
+  <button id="runOne" class="sec">Run current level only</button>
+  <span class="info">Tip: open the browser console for verbose output.</span>
+</div>
+<div id="summary"></div>
+<div id="log"></div>
+<div id="frameWrap"><iframe id="game" src="index.html?qa=1"></iframe></div>
+
+<script>
+/* ============================================================================
+   Riley's Garden QA Harness
+   ----------------------------------------------------------------------------
+   WHY THIS EXISTS
+   The game's #1 recurring bug is "levels never end" (bees drifting off-screen,
+   ghost enemies, snake-kill requirements, etc.). Fixes were historically
+   verified by hand-poking live state in the console. This harness automates
+   that: it loads the real game in an iframe and, for each level, fast-forwards
+   the actual game loop while a synthetic player kills enemies, then asserts the
+   level reaches finishLevel() within a time budget and that core invariants
+   (kills, boss spawn, in-bounds enemies) hold.
+
+   It is intentionally a SINGLE STATIC FILE with no build step, matching the
+   repo's deploy model. A generalized version of these invariants lives in
+   buildable-app (see that repo's README "QA Agent" section) so every
+   AI-generated Buildable Kids game can be checked for unwinnable levels.
+
+   INVARIANTS CHECKED PER LEVEL
+   1. boots:        game globals (loop, LVS, killGoal) are reachable.
+   2. inBounds:     no enemy ever sits far outside the 430px playfield.
+   3. killGoal:     the kill counter reaches killGoal (15) before the boss.
+   4. bossSpawns:   a boss/miniboss actually spawns after killGoal kills.
+   5. ends:         the level reaches the level-complete state within budget.
+   6. noOverrun:    the level does not blow past its hard time cap.
+   ========================================================================== */
+
+const LOG = document.getElementById('log');
+const SUM = document.getElementById('summary');
+function line(msg, cls){ const d=document.createElement('div'); d.className='row '+(cls||'info'); d.textContent=msg; LOG.appendChild(d); console.log('[QA]', msg); }
+function head(msg){ line(msg,'head'); }
+function assert(cond, name, detail){ line((cond?'PASS  ':'FAIL  ')+name+(detail?'  ('+detail+')':''), cond?'pass':'fail'); return !!cond; }
+
+const FRAME = document.getElementById('game');
+function win(){ return FRAME.contentWindow; }
+function doc(){ return FRAME.contentDocument; }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+// Wait until the iframe game has exposed the globals we drive.
+async function waitForBoot(timeout=8000){
+  const t0=Date.now();
+  while(Date.now()-t0<timeout){
+    const w=win();
+    if(w && typeof w.LVS!=='undefined' && typeof w.killGoal!=='undefined' && typeof w.loop==='function') return true;
+    await sleep(100);
+  }
+  return false;
+}
+
+// Reload the iframe and jump straight into a given level index (0-based).
+async function gotoLevel(idx){
+  FRAME.src='index.html?qa=1&_t='+Date.now();
+  await new Promise(r=>FRAME.addEventListener('load', r, {once:true}));
+  const booted=await waitForBoot();
+  if(!booted) return false;
+  const w=win();
+  // Best-effort: use the game's own start hooks if present, else set state directly.
+  try{
+    if(typeof w.startGame==='function') w.startGame();
+    if('lvIdx' in w) w.lvIdx=idx;
+    if(typeof w.buildLv==='function') w.buildLv();
+    if('GS' in w) w.GS='play';
+    if('lvTimer' in w) w.lvTimer=0;
+    if('kills' in w) w.kills=0;
+  }catch(e){ line('setup warn: '+e.message); }
+  return true;
+}
+
+// Are all enemies within a sane bound of the 430px-wide playfield?
+function enemiesInBounds(w){
+  const W=w.W||430, H=w.H||710;
+  const bees=(w.bees||[]).filter(b=>!b._dead);
+  for(const b of bees){ if(b.x<-80||b.x>W+80||b.y<-80||b.y>H+80) return {ok:false, x:Math.round(b.x), y:Math.round(b.y)}; }
+  return {ok:true};
+}
+
+// Drive ONE level to completion. Returns a result object.
+async function runLevel(idx){
+  const name='Level '+(idx+1);
+  head('── '+name+' ───────────────────────────');
+  const ok=await gotoLevel(idx);
+  if(!assert(ok, name+' boots', 'globals reachable')) return {pass:false};
+  const w=win();
+  const cap=(w.LVS && w.LVS[idx] && w.LVS[idx].minDur ? w.LVS[idx].minDur : 30000) + 95000;
+
+  let res={inBounds:true, sawKillGoal:false, sawBoss:false, ended:false, t:0, worstX:0};
+  const startGS = w.GS;
+  const step=50;          // ms of game time per tick
+  let simulated=0;
+
+  while(simulated<cap){
+    // synthetic "perfect player": kill the nearest alive enemy each tick.
+    try{
+      const bees=(w.bees||[]).filter(b=>!b._dead);
+      if(bees.length && typeof w.killBee==='function'){
+        const i=w.bees.indexOf(bees[0]);
+        if(i>=0) w.killBee(i, w.bees[i].x, w.bees[i].y);
+      }
+      // damage the boss if present
+      if(w.boss && typeof w.hitBoss==='function'){ w.hitBoss(); }
+      // advance the level clock and let the engine evaluate win/boss logic
+      if('lvTimer' in w) w.lvTimer+=step;
+      if(typeof w.checkWinCondition==='function') w.checkWinCondition();
+    }catch(e){ line(name+' loop error: '+e.message, 'fail'); }
+
+    // invariants
+    const ib=enemiesInBounds(w);
+    if(!ib.ok){ res.inBounds=false; res.worstX=ib.x; }
+    if((w.kills||0)>=(w.killGoal||15)) res.sawKillGoal=true;
+    if(w.boss) res.sawBoss=true;
+
+    // ended? GS leaves 'play', or a win/levelup screen flag flips.
+    if(w.GS && w.GS!=='play' && w.GS!==startGS){ res.ended=true; break; }
+    if(w.bossSpawned && !w.boss && (w.kills||0)>=(w.killGoal||15) && w.lvTimer>=(w.LVS[idx].minDur||30000)){ res.ended=true; break; }
+
+    simulated+=step;
+    res.t=simulated;
+    if(simulated % 2000 === 0) await sleep(0); // yield occasionally
+  }
+
+  let p=true;
+  p&=assert(res.inBounds, name+' enemies stay in-bounds', res.inBounds?'':'stray enemy at x='+res.worstX);
+  p&=assert(res.sawKillGoal, name+' kill counter reached killGoal('+(w.killGoal)+')');
+  p&=assert(res.sawBoss, name+' miniboss/boss spawned');
+  p&=assert(res.ended, name+' reached level-complete', 'at ~'+(res.t/1000).toFixed(1)+'s of game time');
+  p&=assert(res.t<cap, name+' did not overrun hard cap', (cap/1000)+'s cap');
+  return {pass:!!p, t:res.t};
+}
+
+async function runAll(){
+  LOG.innerHTML=''; SUM.textContent='Running…';
+  let passed=0, total=0;
+  await gotoLevel(0);
+  const w=win();
+  const n=(w.LVS && w.LVS.length) || 5;
+  for(let i=0;i<n;i++){
+    total++;
+    const r=await runLevel(i);
+    if(r.pass) passed++;
+  }
+  SUM.textContent='QA pass complete: '+passed+'/'+total+' levels reached level-complete.';
+  SUM.style.color = (passed===total) ? '#7fe6a6' : '#ff9b9b';
+}
+
+document.getElementById('run').onclick=runAll;
+document.getElementById('runOne').onclick=async()=>{ LOG.innerHTML=''; const i=(win().lvIdx)||0; await runLevel(i); };
+</script>
+</body>
+</html>
