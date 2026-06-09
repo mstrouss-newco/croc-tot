@@ -1,5 +1,18 @@
 # Riley's Garden — Dev Notes
 
+## Off-screen enemies/boss + magnet sound fix (2026-06-09)
+
+**Bug (reported with screenshots):** Bad guys wandered off the visible play area leaving the screen empty, and when the boss finally appeared it charged straight off-screen too. The magnet ("farmer") power-up also played an annoying activation sound.
+
+**Root cause:** In `moveBee()` several movement patterns let enemies leave the screen — `linear` and `zigzag` deliberately *wrapped* with a ±40px off-screen buffer, and `swirl`/`swoop`/`random` set position via trig or reversed velocity at the edge without clamping the position, so fast movers overshot. `updateBoss()` had no bounds at all during its charge-at-player state, so it followed the fairy off the playfield.
+
+**Fix (commit `829cc87`):**
+- Added a universal HARD ON-SCREEN CLAMP at the end of `moveBee()` (runs after every pattern): clamps `x` to `[24, W-24]` and `y` to `[40, H-GH()-20]`, and flips any velocity component that points outward so enemies bounce back inward instead of escaping.
+- Added the equivalent HARD ON-SCREEN CLAMP at the end of `updateBoss()`: clamps boss `x` to `[40, W-40]` and `y` to `[60, H-GH()-30]`, flipping `vx` inward — so the boss can never charge off the playfield.
+- Removed the magnet activation sound by deleting the `sfx('farmer')` call in `loop()`. The magnet power-up itself is unchanged and still works.
+
+**Verification (live, croctot.com/riley/):** Stress-tested all 6 bee patterns (`linear/patrol/random/zigzag/swirl/swoop`) at 18px/frame for 229 samples → 0 off-screen excursions. Pushed the boss to 6 extreme off-screen positions (edges + both diagonal corners) → all clamped back in bounds after one `updateBoss()` tick. Confirmed `sfx('farmer')` is gone from the deployed bundle.
+
 ## Kill-count → miniboss → level-end mechanic (2026-06-09)
 
 This is the deterministic level-end mechanic. Implementation map in `riley/index.html`:
