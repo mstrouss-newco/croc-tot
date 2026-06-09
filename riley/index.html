@@ -674,8 +674,14 @@ startBossMusic();
 function updateBoss(dt){
   if(!boss)return;
   boss.t+=dt*.001;bossHitCool=Math.max(0,bossHitCool-dt);
-  if(bossHp<=10&&bossHp>5&&boss.vx<2.2)boss.vx*=1.4;
-  if(bossHp<=5&&boss.vx<3.5)boss.vx*=1.3;
+  /* RAGE SPEED-UP: ramp the boss's horizontal SPEED (magnitude) toward a target as it weakens, */
+  /* preserving direction. Operating on |vx| (not signed vx) prevents the old runaway blow-up */
+  /* where a negative post-bounce vx kept passing the `<threshold` test and multiplying forever. */
+  var _bdir=boss.vx<0?-1:1, _bspd=Math.abs(boss.vx), _btgt=1.3;
+  if(bossHp<=10&&bossHp>5)_btgt=2.0;
+  if(bossHp<=5)_btgt=2.8;
+  if(_bspd<_btgt)_bspd=Math.min(_btgt,_bspd*1.05+0.02);
+  boss.vx=_bdir*_bspd;
   boss.chargeT+=dt;
   if(boss.chargeT>3500){boss.chargeT=0;boss.charge=true;boss.angry=true;setTimeout(()=>{if(boss){boss.charge=false;boss.angry=false;}},900);}
   if(boss.charge){const dx=PL.x-boss.x,dy=PL.y-boss.y,d=Math.sqrt(dx*dx+dy*dy)||1;boss.x+=dx/d*5*(dt/16);boss.y+=dy/d*5*(dt/16);}
@@ -683,11 +689,12 @@ function updateBoss(dt){
   boss.stompT+=dt;
   if(boss.stompT>3200){boss.stompT=0;stompWaves.push({x:boss.x,y:boss.y,r:10,alpha:1});}
   if(bossHitCool<=0&&D(PL.x,PL.y,boss.x,boss.y)<52){bossHitCool=1400;hitPlayer();}
-  /* HARD ON-SCREEN CLAMP for the boss: it must never charge off the playfield */
-  if(boss.x<40){boss.x=40;if(boss.vx<0)boss.vx=Math.abs(boss.vx)||1;}
-  if(boss.x>W-40){boss.x=W-40;if(boss.vx>0)boss.vx=-(Math.abs(boss.vx)||1);}
-  if(boss.y<60)boss.y=60;
-  var _bf=H-GH()-30; if(boss.y>_bf)boss.y=_bf;
+  /* SAFETY NET: clamp the boss's POSITION inside the playfield without touching vx. */
+  /* The normal-move block already bounces vx at [60, W-60]; we must NOT flip it again here */
+  /* (double-flipping caused the straight-line glitch). We only hard-cap |vx| against blow-ups. */
+  if(Math.abs(boss.vx)>6)boss.vx=(boss.vx<0?-1:1)*6;
+  if(boss.x<30)boss.x=30; if(boss.x>W-30)boss.x=W-30;
+  if(boss.y<60)boss.y=60; var _bf=H-GH()-30; if(boss.y>_bf)boss.y=_bf;
   updHUD();
 }
 
