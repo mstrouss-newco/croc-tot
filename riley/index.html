@@ -685,7 +685,7 @@ function updateBoss(dt){
   boss.chargeT+=dt;
   if(boss.chargeT>3500){boss.chargeT=0;boss.charge=true;boss.angry=true;setTimeout(()=>{if(boss){boss.charge=false;boss.angry=false;}},900);}
   if(boss.charge){const dx=PL.x-boss.x,dy=PL.y-boss.y,d=Math.sqrt(dx*dx+dy*dy)||1;boss.x+=dx/d*5*(dt/16);boss.y+=dy/d*5*(dt/16);}
-  else{boss.x+=boss.vx*(dt/16);boss.y=H-GH()-70+Math.sin(boss.t*1.5)*35;if(boss.x<60||boss.x>W-60)boss.vx*=-1;}
+  else{var _gy=H-GH();var _yc=(60+_gy-90)/2,_ya=(_gy-90-60)/2;boss.x+=boss.vx*(dt/16);boss.y=_yc+Math.sin(boss.t*1.1)*_ya*0.9+Math.cos(boss.t*0.6)*12;if(boss.x<60){boss.x=60;boss.vx=Math.abs(boss.vx);}else if(boss.x>W-60){boss.x=W-60;boss.vx=-Math.abs(boss.vx);}}
   boss.stompT+=dt;
   if(boss.stompT>3200){boss.stompT=0;stompWaves.push({x:boss.x,y:boss.y,r:10,alpha:1});}
   if(bossHitCool<=0&&D(PL.x,PL.y,boss.x,boss.y)<52){bossHitCool=1400;hitPlayer();}
@@ -1140,7 +1140,7 @@ function drawMiniBoss(b){
   // ground shadow
   ctx.beginPath();ctx.ellipse(0,46,40,11,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fill();
   // angry aura ring
-  const aura=ctx.createRadialGradient(0,0,8,0,0,60);aura.addColorStop(0,(b.wc||'#ffcc00')+'cc');aura.addColorStop(1,'rgba(255,80,80,0)');
+  const aura=ctx.createRadialGradient(0,0,8,0,0,60);aura.addColorStop(0,(function(_c){_c=_c||'#ffcc00';if(_c[0]==='#'){var _h=_c.slice(1);if(_h.length===3)_h=_h[0]+_h[0]+_h[1]+_h[1]+_h[2]+_h[2];if(_h.length===6)return '#'+_h+'cc';}return _c;})(b.wc));aura.addColorStop(1,'rgba(255,80,80,0)');
   ctx.beginPath();ctx.arc(0,0,58,0,Math.PI*2);ctx.fillStyle=aura;ctx.fill();
   // the giant bad-guy emoji
   ctx.font='72px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.em||'\uD83D\uDC1D',0,0);
