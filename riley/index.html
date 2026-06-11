@@ -143,36 +143,45 @@ function stopIntro(){try{introAudio.pause();introAudio.currentTime=0;}catch(e){}
 function sfx(type){
   if(muted)return;const a=resumeAC();if(!a)return;
   const t=a.currentTime;
-  function tone(f,d,v,wave,delay){
+  // clean tone helper: o=osc, g=gain envelope with smooth attack+exp decay
+  function tone(f,d,v,wave,delay,f2){
     delay=delay||0;
-    try{const o=a.createOscillator(),g=a.createGain();
-      o.type=wave||'sine';o.frequency.value=f;
-      g.gain.setValueAtTime(0,t+delay);g.gain.linearRampToValueAtTime(v||.15,t+delay+.01);
-      g.gain.exponentialRampToValueAtTime(.001,t+delay+d);
-      o.connect(g);g.connect(a.destination);o.start(t+delay);o.stop(t+delay+d+.01);
+    try{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type=wave||'sine';o.frequency.setValueAtTime(f,t+delay);
+      if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(1,f2),t+delay+d);
+      g.gain.setValueAtTime(0.0001,t+delay);
+      g.gain.linearRampToValueAtTime(v,t+delay+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+delay+d);
+      o.connect(g);g.connect(a.destination);
+      o.start(t+delay);o.stop(t+delay+d+0.02);
     }catch(e){}
   }
-  if(type==='flower'){tone(523,.12,.18);tone(784,.12,.12);tone(1047,.15,.10);}
-  else if(type==='fruit'){tone(659,.08,.2);tone(523,.10,.15);tone(392,.12,.12);}
-  else if(type==='orange'){tone(587,.08,.18);tone(784,.08,.15);tone(987,.12,.12);}
-  else if(type==='combo'){[784,988,1175,1568].forEach((f,i)=>tone(f,.18,.12,'sine',i*.06));}
-  else if(type==='sting'){tone(220,.15,.3,'sawtooth');tone(110,.3,.25,'sawtooth');}
-  else if(type==='snake'){tone(180,.12,.28,'sawtooth');}
-  else if(type==='farmer'){[392,523,659,784,1047].forEach((f,i)=>tone(f,.28,.14,'sine',i*.09));}
-  else if(type==='lc'){[392,523,659,784,1047].forEach((f,i)=>tone(f,.32,.15,'sine',i*.11));}
-  else if(type==='win'){[523,659,784,659,784,1047].forEach((f,i)=>tone(f,.45,.16,'sine',i*.13));}
-  else if(type==='over'){[392,349,311,261].forEach((f,i)=>tone(f,.35,.16,'sawtooth',i*.18));}
-  else if(type==='bosshit'){tone(300,.06,.28,'square');tone(200,.1,.22,'sawtooth');}
-  else if(type==='bossdie'){[392,523,659,784,1047,1568].forEach((f,i)=>tone(f,.55,.18,'sine',i*.09));}
-  else if(type==='beekill'){tone(800,.04,.12,'square');tone(1200,.05,.1,'sine',.03);}
-  else if(type==='snakekill'){tone(600,.06,.14,'square');tone(400,.08,.12,'sawtooth',.03);}
-  // Weapon sounds
-  else if(type==='wep0'){tone(1800,.05,.06,'sine');tone(2200,.04,.04,'sine',.04);}           // fairy dust
-  else if(type==='wep1'){[1400,1700,2000].forEach((f,i)=>tone(f,.06,.05,'sine',i*.025));}   // glitter spray
-  else if(type==='wep2'){tone(300,.12,.12,'sawtooth');tone(450,.06,.06,'sine',.05);}         // slime bomb
-  else if(type==='wep3'){tone(1000,.08,.14,'square');tone(1400,.06,.08,'sine',.08);}         // star storm
-  else if(type==='wep4'){tone(2400,.03,.15,'square');tone(2800,.03,.08,'square',.04);}       // rainbow chain
-  else if(type==='wepup'){[600,800,1000,1400,1800].forEach((f,i)=>tone(f,.2,.14,'sine',i*.06));}
+  function chord(arr,d,v,wave,stagger){arr.forEach((f,i)=>tone(f,d,v,wave,(stagger||0)*i));}
+  // ---- pickups (kept short & soft so rapid magnet collection stays pleasant) ----
+  if(type==='flower'){tone(880,0.10,0.10,'sine');tone(1320,0.09,0.07,'sine',0.04);}
+  else if(type==='fruit'){tone(660,0.09,0.10,'sine');tone(990,0.09,0.07,'sine',0.04);}
+  else if(type==='orange'){tone(740,0.09,0.10,'sine');tone(1110,0.09,0.07,'sine',0.04);}
+  else if(type==='combo'){chord([784,988,1175],0.14,0.09,'triangle',0.05);}
+  // ---- weapon fire: soft airy blip ----
+  else if(type.indexOf('wep')===0&&type!=='wepup'){tone(1150,0.06,0.05,'triangle',0,720);}
+  // ---- enemy hit/kill ----
+  else if(type==='beekill'){tone(520,0.10,0.12,'triangle',0,260);tone(780,0.08,0.07,'sine',0.03);}
+  else if(type==='snakekill'){tone(300,0.14,0.14,'triangle',0,140);}
+  // ---- player hurt: gentle low thud (not harsh) ----
+  else if(type==='sting'){tone(200,0.16,0.16,'sine',0,90);}
+  else if(type==='snake'){tone(160,0.12,0.10,'sine',0,110);}
+  // ---- boss ----
+  else if(type==='bosshit'){tone(420,0.12,0.16,'triangle',0,240);tone(630,0.08,0.08,'sine',0.04);}
+  else if(type==='bossdie'){chord([523,659,784,1047],0.5,0.16,'triangle',0.10);}
+  // ---- weapon unlock chime ----
+  else if(type==='wepup'){chord([659,880,1047],0.22,0.12,'sine',0.07);}
+  // ---- level complete / win / game over ----
+  else if(type==='lc'){chord([523,659,784,1047],0.28,0.13,'sine',0.09);}
+  else if(type==='win'){chord([523,659,784,1047,1319],0.55,0.15,'triangle',0.11);}
+  else if(type==='over'){tone(392,0.4,0.16,'sine',0,196);tone(294,0.5,0.14,'sine',0.18,147);}
+  // ---- legacy 'farmer' kept as a soft sparkle so old calls (if any) stay pleasant ----
+  else if(type==='farmer'){chord([784,1047,1319],0.16,0.07,'sine',0.05);}
 }
 
 // ── Background music ─────────────────────────────────────────
@@ -276,7 +285,7 @@ function _note(a,freq,vol,wave,t,dur,cut){
     g.connect(a.destination);o.start(t);o.stop(t+dur+0.03);}catch(e){}
 }
 function _tick(){
-  _mt=null;if(muted||GS!=='play')return;
+  _mt=null;if(muted||GS!=='play')return;if(_realAudio||_bossAudio)return;
   const a=resumeAC();if(!a||a.state==='suspended'){if(a)a.resume().then(()=>{_mtime=a.currentTime+0.1;_mt=setTimeout(_tick,80);});else _mt=setTimeout(_tick,150);return;}
   const now=a.currentTime;
   if(_mtime<now)_mtime=now+0.06;
@@ -319,7 +328,7 @@ function stopBuzz(){
 // type: dust=homing sparkle  bomb=pink glitter explosion  slime=toxic arc  zap=chain lightning  vortex=spinning tornado
 const WEAPONS=[
   {id:0,nm:'Fairy Dust',    e:'✨',c1:'#ffaaff',c2:'#ff66ee',type:'dust',  cd:350,dmg:1,spd:3.2, aoe:0  },
-  {id:1,nm:'Glitter Bomb',  e:'💥',c1:'#ff44bb',c2:'#ffe066',type:'bomb',  cd:650,dmg:2,spd:2.8, aoe:80 },
+  {id:1,nm:'Sparkle Shot',  e:'✨',c1:'#ff88dd',c2:'#ffd0f5',type:'dust',  cd:300,dmg:2,spd:3.6, aoe:0 },
   {id:2,nm:'Toxic Slime',   e:'☢️', c1:'#44ff44',c2:'#aa00ff',type:'slime', cd:800,dmg:2,spd:2.2, aoe:90 },
   {id:3,nm:'Lightning Zap', e:'⚡',c1:'#88eeff',c2:'#ffffff',type:'zap',   cd:300,dmg:2,spd:4.5, aoe:0  },
   {id:4,nm:'Rainbow Vortex',e:'🌀',c1:'#ff44ff',c2:'#44ffff',type:'vortex',cd:1200,dmg:3,spd:0,  aoe:120},
